@@ -39,6 +39,7 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
         uint256 price_
     ) ERC721(name_, symbol_) Ownable(msg.sender) {
         // TODO: implement
+
     }
 
     /**
@@ -50,7 +51,10 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
      *  - then delegate the minting to `_mintBatch`.
      */
     function buy(uint256 quantity) external payable returns (uint256[] memory) {
-        // TODO: implement
+        if (msg.value != quantity * price) {
+            revert("Incorrect ETH amount");
+        }
+        return _mintBatch(msg.sender, quantity);
     }
 
     /**
@@ -81,7 +85,20 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
         address to,
         uint256 quantity
     ) private returns (uint256[] memory) {
-        // TODO: implement
+        if (quantity == 0) {
+            revert("Quantity must be positive");
+        }else if (_nextTokenId + quantity > maxSupply) {
+            revert("Sold out");
+        }   
+        uint256[] memory tokenIds = new uint256[](quantity);
+        for (uint256 i = 0; i < quantity; i++) {    
+            uint256 tokenId = _nextTokenId++;
+            _safeMint(to, tokenId);
+            _setTokenURI(tokenId, ticketURI);
+            tokenIds[i] = tokenId;
+        }
+    
+        return tokenIds;
     }
 
     /**
@@ -93,7 +110,10 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
      * Hint: use a low-level `call{value: …}("") or transfer`.
      */
     function withdraw() external onlyOwner {
-        // TODO: implement
+        (bool success, ) = owner().call{value: address(this).balance}("");
+        if (!success) {
+            revert("Withdraw failed");
+        }
     }
 
     /**
