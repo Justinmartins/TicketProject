@@ -3,7 +3,7 @@ pragma solidity ^0.8.13;
 
 import {Script} from "lib/forge-std/src/Script.sol";
 import {console} from "lib/forge-std/src/console.sol";
-import {Skeloton} from "../src/Skeloton.sol";
+import {Ticket} from "../src/Skeloton.sol";
 
 /**
  * Deployment script for ticket categories.
@@ -22,7 +22,7 @@ import {Skeloton} from "../src/Skeloton.sol";
  */
 
 contract DeployTicketCategory is Script {
-    Skeloton public ticketContract;
+    Ticket public ticketContract;
 
     function setUp() public {}
 
@@ -35,7 +35,7 @@ contract DeployTicketCategory is Script {
 
         vm.startBroadcast();
 
-        ticketContract = new Skeloton(name, symbol, maxSupply, ticketURI, price);
+        ticketContract = new Ticket(name, symbol, maxSupply, ticketURI, price);
 
         vm.stopBroadcast();
 

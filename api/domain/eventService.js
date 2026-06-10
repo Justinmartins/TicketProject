@@ -1,4 +1,5 @@
 const db = require('../infrastructure/db');
+const { deployTicketContract } = require('../infrastructure/chain');
 
 function createEvent(data) {
   const { name, venue, event_date, seller } = data;
@@ -19,15 +20,32 @@ function listEvents() {
   return db.getAllEvents();
 }
 
-function createTicketCategory(event_id, data) {
+async function createTicketCategory(event_id, data) {
   const event = db.getEventById(event_id);
   if (!event) throw new Error('Event not found');
 
-  const { name, symbol, max_supply, price_wei, price_eur } = data;
+  const { name, symbol, max_supply, price_wei, price_eur, ticket_uri } = data;
   if (!name || !symbol || !max_supply || !price_wei || price_eur === undefined) {
     throw new Error('name, symbol, max_supply, price_wei and price_eur are required');
   }
-  return db.createTicketCategory({ event_id, ...data });
+
+  const category = db.createTicketCategory({ event_id, ...data });
+
+  const deployment = await deployTicketContract({
+    name,
+    symbol,
+    maxSupply: max_supply,
+    ticketURI: ticket_uri || '',
+    priceWei: price_wei,
+  });
+
+  return db.updateCategoryContract(category.id, deployment);
 }
 
-module.exports = { createEvent, getEvent, listEvents, createTicketCategory };
+function updateCategoryContract(categoryId, data) {
+  const category = db.getCategoryById(categoryId);
+  if (!category) throw new Error('Category not found');
+  return db.updateCategoryContract(categoryId, data);
+}
+
+module.exports = { createEvent, getEvent, listEvents, createTicketCategory, updateCategoryContract };

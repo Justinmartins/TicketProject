@@ -1,5 +1,6 @@
 const { Router } = require('express');
 const service = require('../domain/eventService');
+const purchaseRouter = require('./purchase');
 
 const router = Router();
 
@@ -32,13 +33,26 @@ router.get('/:id', (req, res) => {
 });
 
 // POST /events/:id/categories
-router.post('/:id/categories', (req, res) => {
+router.post('/:id/categories', async (req, res) => {
   try {
-    const category = service.createTicketCategory(Number(req.params.id), req.body);
+    const category = await service.createTicketCategory(Number(req.params.id), req.body);
     res.status(201).json(category);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
+
+// PATCH /events/:id/categories/:catId/contract
+router.patch('/:id/categories/:catId/contract', (req, res) => {
+  try {
+    const category = service.updateCategoryContract(Number(req.params.catId), req.body);
+    res.json(category);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /events/:id/categories/:catId/purchase
+router.use('/:id/categories/:catId/purchase', purchaseRouter);
 
 module.exports = router;
