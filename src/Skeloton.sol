@@ -40,7 +40,9 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
     ) ERC721(name_, symbol_) Ownable(msg.sender) {
         name_ = name_;
         symbol_ = symbol_;
+        maxSupply = maxSupply_;
         ticketURI = ticketURI_;
+        price = price_;
     }
 
     /**
@@ -149,7 +151,7 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
         return super._update(to, tokenId, auth);
     }
 
-    function _increaseBalance(
+    function _increaseBalance( 
         address account,
         uint128 value
     ) internal override(ERC721, ERC721Enumerable) {
