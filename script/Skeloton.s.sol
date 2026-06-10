@@ -10,12 +10,25 @@ contract Cat1 is Script {
     function setUp() public {}
 
     function run() public {
+        string memory name      = vm.envString("TICKET_NAME");
+        string memory symbol    = vm.envString("TICKET_SYMBOL");
+        uint256 maxSupply       = vm.envUint("TICKET_MAX_SUPPLY");
+        string memory ticketURI = vm.envString("TICKET_URI");
+        uint256 price           = vm.envUint("TICKET_PRICE_WEI");
+        uint256 quantity        = vm.envUint("QUANTITY_REQUESTED");
+
         vm.startBroadcast();
 
-        skeloton = new Skeloton();
-        uint256 quantity = 
+        ticket = new Ticket(name, symbol, maxSupply, ticketURI, price);
+        ticket.buy(quantity);
 
         vm.stopBroadcast();
+
+        console.log("Ticket deployed at:", address(ticket));
+        console.log("Name:      ", name);
+        console.log("Symbol:    ", symbol);
+        console.log("Max supply:", maxSupply);
+        console.log("Price(wei):", price);
     }
 }
 
