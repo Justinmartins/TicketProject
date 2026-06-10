@@ -38,7 +38,9 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
         string memory ticketURI_,
         uint256 price_
     ) ERC721(name_, symbol_) Ownable(msg.sender) {
-        // TODO: implement
+        name_ = name_;
+        symbol_ = symbol_;
+        ticketURI = ticketURI_;
     }
 
     /**
@@ -64,8 +66,8 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
     function mint(
         address to,
         uint256 quantity
-    ) external returns (uint256[] memory) {
-        // TODO: implement (and add the missing modifier to the signature)
+    ) external onlyOwner returns (uint256[] memory) {
+        return _mintBatch(to, quantity);
     }
 
     /**
