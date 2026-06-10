@@ -1,7 +1,12 @@
+require('dotenv').config();
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, 'ticketing.sqlite'));
+const dbPath = process.env.DB_PATH
+  ? path.resolve(process.env.DB_PATH)
+  : path.join(__dirname, 'ticketing.sqlite');
+
+const db = new Database(dbPath);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS events (
@@ -34,6 +39,6 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_ticket_categories_event ON ticket_categories(event_id);
 `);
 
-console.log('Database initialised: db/ticketing.sqlite');
+console.log(`Database initialised: ${dbPath}`);
 
 module.exports = db;
