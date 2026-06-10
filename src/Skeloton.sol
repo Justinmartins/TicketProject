@@ -127,10 +127,10 @@ contract Ticket is ERC721URIStorage, ERC721Enumerable, Ownable {
     function ticketsOf(
         address account
     ) external view returns (uint256[] memory) {
-        uint256 size =  balanceOf(_owner);
+        uint256 size =  balanceOf(account);
         uint256[] memory itemList = new uint256[](size); 
         for(uint256 i = 0; i < size; i++){
-            itemList[i] = tokenOfOwnerByIndex(_owner, i);
+            itemList[i] = tokenOfOwnerByIndex(account, i);
         }
         return itemList;
     }
