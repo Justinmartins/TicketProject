@@ -7,8 +7,8 @@ Our plateform is a Web3 ticketing platform where using NFTs on ERC-721 standard.
 
 When you create a ticket category : fresh `Ticket` smart contract is deployed on-chain holding the supply cap, the price, and the metadata URI pointing to IPFS. From there, two purchase paths exist:
 
-- **Buy with ETH** — the user calls `buy(quantity)` directly on the contract from their wallet. No backend involved.
-- **Buy with card (EUR)** — the API accepts the payment (currently mocked, designed for Stripe), then calls `mint()` on the contract as the platform owner, sending the NFTs to the buyer's wallet address.
+- **Buy with ETH** : the user calls `buy(quantity)` directly on the contract from their wallet. No backend involved.
+- **Buy with card (EUR)** : the API accepts the payment (currently mocked, designed for Stripe), then calls `mint()` on the contract as the platform owner, sending the NFTs to the buyer's wallet address.
 
 Ticket metadata (images, descriptions) is stored on IPFS via Pinata.
 
@@ -81,8 +81,8 @@ The API is the single source of truth for event/category metadata (SQLite). The 
 ## Prerequisites
 
 - **Node.js** v18+
-- **Foundry** — install via `curl -L https://foundry.paradigm.xyz | bash && foundryup`
-- An Ethereum node to connect to — for local dev, Anvil (bundled with Foundry) is the easiest option
+- **Foundry** : install via `curl -L https://foundry.paradigm.xyz | bash && foundryup`
+- An Ethereum node to connect to : for local dev, Anvil (bundled with Foundry) is the easiest option
 
 ---
 
@@ -185,10 +185,10 @@ forge test
 
 The `Ticket` contract ([src/Skeloton.sol](src/Skeloton.sol)) is an ERC-721 with a few additions:
 
-- **`buy(quantity)`** — public payable function. Anyone can buy tickets by sending exactly `quantity × price` wei.
-- **`mint(to, quantity)`** — owner-only. Used by the platform after a card payment.
-- **`ticketsOf(account)`** — returns all token IDs owned by a given address.
-- **`withdraw()`** — owner can pull the ETH balance out of the contract.
+- **`buy(quantity)`** : public payable function. Anyone can buy tickets by sending exactly `quantity × price` wei.
+- **`mint(to, quantity)`** : owner-only. Used by the platform after a card payment.
+- **`ticketsOf(account)`** : returns all token IDs owned by a given address.
+- **`withdraw()`** : owner can pull the ETH balance out of the contract.
 
 Each ticket in a category shares the same metadata URI (pointing to IPFS), which is set at mint time. The contract inherits from OpenZeppelin's `ERC721URIStorage`, `ERC721Enumerable`, and `Ownable`.
 
