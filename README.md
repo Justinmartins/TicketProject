@@ -39,14 +39,6 @@ The API is the single source of truth for event/category metadata (SQLite). The 
 
 ---
 
-## Prerequisites
-
-- **Node.js** v18+
-- **Foundry** : install via `curl -L https://foundry.paradigm.xyz | bash && foundryup`
-- An Ethereum node to connect to : for local dev, Anvil (bundled with Foundry) is the easiest option
-
----
-
 ## Getting started
 
 ### 1. Clone and install
