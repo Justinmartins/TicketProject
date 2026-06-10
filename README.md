@@ -12,45 +12,6 @@ When you create a ticket category : fresh `Ticket` smart contract is deployed on
 
 Ticket metadata (images, descriptions) is stored on IPFS via Pinata.
 
----
-
-## Project structure
-
-```
-.
-├── src/                    # Solidity smart contracts
-│   └── Skeloton.sol        # The Ticket ERC-721 contract
-├── test/                   # Foundry unit tests for the contracts
-├── script/                 # Forge deployment scripts
-├── api/
-│   ├── app.js              # Express app setup + Swagger wiring
-│   ├── index.js            # Server entry point
-│   ├── routes/
-│   │   ├── events.js       # CRUD for events and ticket categories
-│   │   ├── purchase.js     # EUR purchase endpoint (nested under events)
-│   │   └── pay.js          # Alternative flat pay route (with card validation)
-│   ├── domain/
-│   │   ├── eventService.js    # Business logic: create events, deploy contracts
-│   │   └── purchaseService.js # Business logic: mint after payment
-│   └── infrastructure/
-│       ├── db.js           # SQLite queries via better-sqlite3
-│       └── chain.js        # ethers.js: deploy contracts + call mint
-├── db/
-│   ├── setup.js            # Creates SQLite tables on first run
-│   └── ticketing.sqlite    # Local database (git-ignored)
-├── frontend/               # React + Vite frontend
-│   └── src/
-│       ├── pages/          # EventList, EventDetail, Basket, Checkout, SellerDashboard
-│       ├── components/     # BuyWithEth, BuyWithEur, ConnectWallet, CreditCardForm
-│       ├── context/        # CartContext (shopping cart state)
-│       ├── wagmiConfig.js  # Wallet connection config (wagmi + viem)
-│       └── abi.js          # Contract ABI for frontend calls
-└── tests/
-    └── events.test.js      # Jest + supertest API integration tests
-```
-
----
-
 ## Architecture
 
 ```
