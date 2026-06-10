@@ -2,10 +2,27 @@
 pragma solidity ^0.8.13;
 
 import {Script} from "lib/forge-std/src/Script.sol";
+import {console} from "lib/forge-std/src/console.sol";
 import {Skeloton} from "../src/Skeloton.sol";
 
-contract Cat1 is Script {
-    Skeloton public skeloton;
+/**
+ * Deployment script for ticket categories.
+ * Each ticket category of an event is deployed as ONE separate smart contract.
+ * Run this script once per category with different environment variables.
+ *
+ * Usage:
+ *   forge script script/Skeloton.s.sol --rpc-url <RPC> --private-key <KEY> --broadcast
+ *
+ * Required environment variables:
+ *   - TICKET_NAME: Category name (e.g., "VIP", "Standard")
+ *   - TICKET_SYMBOL: Category symbol (e.g., "VIP2025")
+ *   - TICKET_MAX_SUPPLY: Max tickets in this category
+ *   - TICKET_URI: Metadata URI (ipfs://...)
+ *   - TICKET_PRICE_WEI: Price per ticket in wei
+ */
+
+contract DeployTicketCategory is Script {
+    Skeloton public ticketContract;
 
     function setUp() public {}
 
@@ -15,47 +32,21 @@ contract Cat1 is Script {
         uint256 maxSupply       = vm.envUint("TICKET_MAX_SUPPLY");
         string memory ticketURI = vm.envString("TICKET_URI");
         uint256 price           = vm.envUint("TICKET_PRICE_WEI");
-        uint256 quantity        = vm.envUint("QUANTITY_REQUESTED");
 
         vm.startBroadcast();
 
-        ticket = new Ticket(name, symbol, maxSupply, ticketURI, price);
-        ticket.buy(quantity);
+        ticketContract = new Skeloton(name, symbol, maxSupply, ticketURI, price);
 
         vm.stopBroadcast();
 
-        console.log("Ticket deployed at:", address(ticket));
-        console.log("Name:      ", name);
-        console.log("Symbol:    ", symbol);
-        console.log("Max supply:", maxSupply);
-        console.log("Price(wei):", price);
-    }
-}
-
-contract Cat2 is Script {
-    Skeloton public skeloton;
-
-    function setUp() public {}
-
-    function run() public {
-        vm.startBroadcast();
-
-        skeloton = new Skeloton();
-
-        vm.stopBroadcast();
-    }
-}
-
-contract Cat3 is Script {
-    Skeloton public skeloton;
-
-    function setUp() public {}
-
-    function run() public {
-        vm.startBroadcast();
-
-        skeloton = new Skeloton();
-
-        vm.stopBroadcast();
+        console.log("========================================");
+        console.log("Ticket Category Deployed Successfully");
+        console.log("========================================");
+        console.log("Contract Address:", address(ticketContract));
+        console.log("Name:             ", name);
+        console.log("Symbol:           ", symbol);
+        console.log("Max Supply:       ", maxSupply);
+        console.log("Price (wei):      ", price);
+        console.log("========================================");
     }
 }
