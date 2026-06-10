@@ -2,9 +2,12 @@ require('dotenv').config();
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const dbPath = process.env.DB_PATH
-  ? path.resolve(process.env.DB_PATH)
-  : path.join(__dirname, 'ticketing.sqlite');
+const rawPath = process.env.DB_PATH;
+const dbPath = !rawPath
+  ? path.join(__dirname, 'ticketing.sqlite')
+  : rawPath === ':memory:'
+    ? ':memory:'
+    : path.resolve(rawPath);
 
 const db = new Database(dbPath);
 
