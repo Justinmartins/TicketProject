@@ -10,8 +10,10 @@
   "scripts": {
     "test": "jest",
     "db:setup": "node db/setup.js",
+    "db:seed": "node db/seed.js",
     "start": "node api/index.js",
-    "dev": "node --watch api/index.js"
+    "dev": "node --watch api/index.js",
+    "dev:clean": "node db/seed.js && node --watch api/index.js"
   },
   "jest": {
     "testEnvironment": "node",

@@ -7,6 +7,6 @@ export const config = createConfig({
   connectors: [injected()],
   transports: {
     [anvil.id]: http('http://127.0.0.1:8545'),
-    [sepolia.id]: http(import.meta.env.VITE_RPC_URL || 'https://rpc.sepolia.org'),
+    [sepolia.id]: http(import.meta.env.VITE_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com'),
   },
 })
