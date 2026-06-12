@@ -6,6 +6,31 @@ import EventDetail from './pages/EventDetail'
 import Checkout from './pages/Checkout'
 import SellerDashboard from './pages/SellerDashboard'
 import MyTickets from './pages/MyTickets'
+import { useAccount } from 'wagmi'
+
+function ProtectedRoute({ children }) {
+  const { isConnected } = useAccount()
+  
+  if (!isConnected) {
+    return (
+      <div className="page empty-state">
+        <div className="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h2 style={{ color: 'var(--text)', marginBottom: '0' }}>Ready to join the experience?</h2>
+        <p style={{ maxWidth: '400px', margin: '0 auto .5rem' }}>
+          Connect your wallet to securely purchase tickets, manage your events, and unlock all features.
+        </p>
+        <ConnectWallet />
+      </div>
+    )
+  }
+  
+  return children
+}
 
 function Nav() {
   const { totalItems } = useCart()
@@ -59,9 +84,9 @@ export default function App() {
           <Route path="/" element={<EventList />} />
           <Route path="/events/:id" element={<EventDetail />} />
           <Route path="/basket" element={<Navigate to="/checkout" replace />} />
-          <Route path="/checkout" element={<Checkout />} />
-          <Route path="/tickets" element={<MyTickets />} />
-          <Route path="/seller" element={<SellerDashboard />} />
+          <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
+          <Route path="/tickets" element={<ProtectedRoute><MyTickets /></ProtectedRoute>} />
+          <Route path="/seller" element={<ProtectedRoute><SellerDashboard /></ProtectedRoute>} />
         </Routes>
       </CartProvider>
     </BrowserRouter>

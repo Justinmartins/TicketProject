@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { createEvent, createCategory, updateCategoryContract } from '../api'
+import { createEvent, createCategory } from '../api'
 
 const EMPTY_EVENT = { name: '', description: '', venue: '', event_date: '', seller: '' }
 const EMPTY_CAT = { name: '', symbol: '', max_supply: '', price_wei: '', price_eur: '', ticket_uri: '' }
 
 function StepIndicator({ current }) {
-  const steps = ['Event', 'Tier', 'Contract']
+  const steps = ['Event', 'Tier']
   return (
     <>
       <div className="step-indicator">
@@ -32,8 +32,6 @@ export default function SellerDashboard() {
   const [createdEvent, setCreatedEvent] = useState(null)
   const [catForm, setCatForm] = useState(EMPTY_CAT)
   const [createdCat, setCreatedCat] = useState(null)
-  const [contractAddress, setContractAddress] = useState('')
-  const [txHash, setTxHash] = useState('')
   const [error, setError] = useState(null)
 
   const currentStep = !createdEvent ? 1 : !createdCat ? 2 : 3
@@ -46,13 +44,6 @@ export default function SellerDashboard() {
     e.preventDefault(); setError(null)
     try { setCreatedCat(await createCategory(createdEvent.id, { ...catForm, max_supply: Number(catForm.max_supply), price_eur: Number(catForm.price_eur) })) }
     catch (err) { setError(err.message) }
-  }
-  async function handleSetContract(e) {
-    e.preventDefault(); setError(null)
-    try {
-      await updateCategoryContract(createdEvent.id, createdCat.id, { contract_address: contractAddress, tx_hash: txHash || null, deployed_at: new Date().toISOString() })
-      setCreatedCat(prev => ({ ...prev, contract_address: contractAddress }))
-    } catch (err) { setError(err.message) }
   }
 
   return (
@@ -78,19 +69,29 @@ export default function SellerDashboard() {
       {!createdEvent && (
         <form className="form-card" onSubmit={handleCreateEvent}>
           <h2>Step 1 — Create an event</h2>
-          {[
-            { key: 'name',        label: 'Event name',         required: true },
-            { key: 'venue',       label: 'Venue',              required: true },
-            { key: 'event_date',  label: 'Date', type: 'date', required: true },
-            { key: 'seller',      label: 'Seller address / name', required: true },
-            { key: 'description', label: 'Description (optional)' },
-          ].map(({ key, label, type = 'text', required }) => (
-            <div key={key} className="field">
-              <label>{label}</label>
-              <input type={type} required={required} value={eventForm[key]} onChange={e => setEventForm(prev => ({ ...prev, [key]: e.target.value }))} />
+          <div className="field">
+            <label>Event name</label>
+            <input type="text" required placeholder="e.g. Summer Music Festival" value={eventForm.name} onChange={e => setEventForm(prev => ({ ...prev, name: e.target.value }))} />
+          </div>
+          <div className="form-row">
+            <div className="field">
+              <label>Venue</label>
+              <input type="text" required placeholder="e.g. Stade de France" value={eventForm.venue} onChange={e => setEventForm(prev => ({ ...prev, venue: e.target.value }))} />
             </div>
-          ))}
-          <button type="submit">Create event &rarr;</button>
+            <div className="field">
+              <label>Date</label>
+              <input type="date" required value={eventForm.event_date} onChange={e => setEventForm(prev => ({ ...prev, event_date: e.target.value }))} />
+            </div>
+          </div>
+          <div className="field">
+            <label>Seller address / name</label>
+            <input type="text" required placeholder="0x... or your brand name" value={eventForm.seller} onChange={e => setEventForm(prev => ({ ...prev, seller: e.target.value }))} />
+          </div>
+          <div className="field">
+            <label>Description <span className="muted" style={{textTransform:'none', fontWeight:500}}>(optional)</span></label>
+            <textarea placeholder="Tell your attendees what this event is about..." value={eventForm.description} onChange={e => setEventForm(prev => ({ ...prev, description: e.target.value }))} />
+          </div>
+          <button type="submit" style={{marginTop:'.5rem', width:'100%', padding:'.75rem'}}>Create Event &rarr;</button>
         </form>
       )}
 
@@ -105,44 +106,42 @@ export default function SellerDashboard() {
       {createdEvent && !createdCat && (
         <form className="form-card" onSubmit={handleCreateCategory}>
           <h2>Step 2 — Add a ticket tier</h2>
-          {[
-            { key: 'name',       label: 'Tier name',                required: true },
-            { key: 'symbol',     label: 'Token symbol (e.g. GA)',   required: true },
-            { key: 'max_supply', label: 'Max supply', type:'number',required: true },
-            { key: 'price_wei',  label: 'Price in wei',             required: true },
-            { key: 'price_eur',  label: 'Price in EUR', type:'number', required: true },
-            { key: 'ticket_uri', label: 'Ticket URI (ipfs://…)' },
-          ].map(({ key, label, type = 'text', required }) => (
-            <div key={key} className="field">
-              <label>{label}</label>
-              <input type={type} required={required} value={catForm[key]} onChange={e => setCatForm(prev => ({ ...prev, [key]: e.target.value }))} />
+          <div className="form-row">
+            <div className="field">
+              <label>Tier name</label>
+              <input type="text" required placeholder="e.g. General Admission" value={catForm.name} onChange={e => setCatForm(prev => ({ ...prev, name: e.target.value }))} />
             </div>
-          ))}
-          <button type="submit">Add tier &rarr;</button>
+            <div className="field">
+              <label>Token symbol</label>
+              <input type="text" required placeholder="e.g. GA" value={catForm.symbol} onChange={e => setCatForm(prev => ({ ...prev, symbol: e.target.value }))} />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="field">
+              <label>Max supply</label>
+              <input type="number" required placeholder="e.g. 500" min="1" value={catForm.max_supply} onChange={e => setCatForm(prev => ({ ...prev, max_supply: e.target.value }))} />
+            </div>
+            <div className="field">
+              <label>Price in EUR</label>
+              <input type="number" required placeholder="e.g. 50" min="0" step="0.01" value={catForm.price_eur} onChange={e => setCatForm(prev => ({ ...prev, price_eur: e.target.value }))} />
+            </div>
+          </div>
+          <div className="form-row">
+            <div className="field">
+              <label>Price in Wei <span className="muted" style={{textTransform:'none', fontWeight:500}}>(Blockchain)</span></label>
+              <input type="text" required placeholder="e.g. 10000000000000000" value={catForm.price_wei} onChange={e => setCatForm(prev => ({ ...prev, price_wei: e.target.value }))} />
+            </div>
+            <div className="field">
+              <label>Ticket URI <span className="muted" style={{textTransform:'none', fontWeight:500}}>(optional)</span></label>
+              <input type="text" placeholder="ipfs://..." value={catForm.ticket_uri} onChange={e => setCatForm(prev => ({ ...prev, ticket_uri: e.target.value }))} />
+            </div>
+          </div>
+          <button type="submit" style={{marginTop:'.5rem', width:'100%', padding:'.75rem'}}>Deploy Ticket Tier &rarr;</button>
         </form>
       )}
 
-      {createdCat && !createdCat.contract_address && (
-        <form className="form-card" onSubmit={handleSetContract}>
-          <h2>Step 3 — Link deployed contract</h2>
-          <p className="muted" style={{ marginBottom: '1.25rem', lineHeight: 1.6 }}>
-            Deploy the Ticket contract via{' '}
-            <code style={{ background: 'var(--bg)', padding: '.1rem .4rem', borderRadius: 4, fontSize: '.85rem' }}>forge script</code>
-            {' '}first, then paste the address below.
-          </p>
-          <div className="field">
-            <label>Contract address</label>
-            <input type="text" required placeholder="0x…" value={contractAddress} onChange={e => setContractAddress(e.target.value)} />
-          </div>
-          <div className="field">
-            <label>Deploy tx hash (optional)</label>
-            <input type="text" placeholder="0x…" value={txHash} onChange={e => setTxHash(e.target.value)} />
-          </div>
-          <button type="submit">Save contract</button>
-        </form>
-      )}
 
-      {createdCat?.contract_address && (
+      {createdCat && (
         <div className="success-box" style={{ marginTop: '.5rem' }}>
           <span className="success-box-icon">&#10003;</span>
           All done! Your event is live and tickets are available for sale.

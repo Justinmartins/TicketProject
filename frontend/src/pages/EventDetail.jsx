@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getEvent } from '../api'
 import { useCart } from '../context/CartContext'
+import { useAccount } from 'wagmi'
+import ConnectWallet from '../components/ConnectWallet'
 
 const TicketSvg = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -18,6 +20,7 @@ export default function EventDetail() {
   const [error, setError] = useState(null)
   const [quantities, setQuantities] = useState({})
   const [added, setAdded] = useState({})
+  const { isConnected } = useAccount()
 
   useEffect(() => {
     getEvent(id).then(setEvent).catch(e => setError(e.message)).finally(() => setLoading(false))
@@ -89,15 +92,22 @@ export default function EventDetail() {
           </div>
 
           {cat.contract_address ? (
-            <div className="quantity-row" style={{ marginTop: '.75rem' }}>
-              <button className="btn-small" onClick={() => setQty(cat.id, getQty(cat.id) - 1)}>−</button>
-              <span className="basket-qty">{getQty(cat.id)}</span>
-              <button className="btn-small" onClick={() => setQty(cat.id, getQty(cat.id) + 1)}>+</button>
-              <button onClick={() => handleAdd(cat)} disabled={added[cat.id]}
-                style={added[cat.id] ? { background: 'var(--green-l)', color: 'var(--green)', border: '1px solid #a7f3d0' } : {}}>
-                {added[cat.id] ? 'Added to cart' : 'Add to cart'}
-              </button>
-            </div>
+            isConnected ? (
+              <div className="quantity-row" style={{ marginTop: '.75rem' }}>
+                <button className="btn-small" onClick={() => setQty(cat.id, getQty(cat.id) - 1)}>−</button>
+                <span className="basket-qty">{getQty(cat.id)}</span>
+                <button className="btn-small" onClick={() => setQty(cat.id, getQty(cat.id) + 1)}>+</button>
+                <button onClick={() => handleAdd(cat)} disabled={added[cat.id]}
+                  style={added[cat.id] ? { background: 'var(--green-l)', color: 'var(--green)', border: '1px solid #a7f3d0' } : {}}>
+                  {added[cat.id] ? 'Added to cart' : 'Add to cart'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ marginTop: '.75rem' }}>
+                <p className="muted" style={{ marginBottom: '.5rem', fontSize: '.8rem' }}>Connect your wallet to purchase tickets</p>
+                <ConnectWallet />
+              </div>
+            )
           ) : (
             <p className="muted" style={{ marginTop: '.75rem' }}>Contract not yet deployed</p>
           )}

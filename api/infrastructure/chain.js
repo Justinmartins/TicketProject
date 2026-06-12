@@ -7,8 +7,11 @@ const { abi: TICKET_ABI, bytecode: { object: TICKET_BYTECODE } } = artifact;
 const MINT_ABI = ['function mint(address to, uint256 quantity) external returns (uint256[])'];
 
 function getWallet() {
-  const provider = new ethers.JsonRpcProvider(process.env.RPC_URL);
-  return new ethers.Wallet(process.env.PRIVATE_KEY, provider);
+  const rpcUrl = process.env.RPC_URL || 'http://127.0.0.1:8545';
+  const privateKey = process.env.PRIVATE_KEY;
+  if (!privateKey) throw new Error('PRIVATE_KEY is not defined in .env');
+  const provider = new ethers.JsonRpcProvider(rpcUrl);
+  return new ethers.Wallet(privateKey, provider);
 }
 
 function getTicketContract(contractAddress) {
@@ -16,7 +19,7 @@ function getTicketContract(contractAddress) {
 }
 
 async function deployTicketContract({ name, symbol, maxSupply, ticketURI, priceWei }) {
-  if (process.env.NODE_ENV === 'test' || !process.env.PRIVATE_KEY || !process.env.RPC_URL) {
+  if (process.env.NODE_ENV === 'test') {
     return {
       contract_address: null,
       tx_hash: null,
