@@ -29,8 +29,6 @@ async function createTicketCategory(event_id, data) {
     throw new Error('name, symbol, max_supply, price_wei and price_eur are required');
   }
 
-  const category = db.createTicketCategory({ event_id, ...data });
-
   const deployment = await deployTicketContract({
     name,
     symbol,
@@ -39,6 +37,11 @@ async function createTicketCategory(event_id, data) {
     priceWei: price_wei,
   });
 
+  if (!deployment.contract_address) {
+    throw new Error('Smart contract deployment failed. Please check your RPC node connection, balance or contract compilation.');
+  }
+
+  const category = db.createTicketCategory({ event_id, ...data });
   return db.updateCategoryContract(category.id, deployment);
 }
 

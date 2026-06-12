@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { createEvent, createCategory, updateCategoryContract } from '../api'
+import { createEvent, createCategory } from '../api'
 
 const EMPTY_EVENT = { name: '', description: '', venue: '', event_date: '', seller: '' }
 const EMPTY_CAT = { name: '', symbol: '', max_supply: '', price_wei: '', price_eur: '', ticket_uri: '' }
@@ -9,8 +9,7 @@ export default function SellerDashboard() {
   const [createdEvent, setCreatedEvent] = useState(null)
   const [catForm, setCatForm] = useState(EMPTY_CAT)
   const [createdCat, setCreatedCat] = useState(null)
-  const [contractAddress, setContractAddress] = useState('')
-  const [txHash, setTxHash] = useState('')
+  const [deploying, setDeploying] = useState(false)
   const [error, setError] = useState(null)
 
   async function handleCreateEvent(e) {
@@ -27,6 +26,7 @@ export default function SellerDashboard() {
   async function handleCreateCategory(e) {
     e.preventDefault()
     setError(null)
+    setDeploying(true)
     try {
       const cat = await createCategory(createdEvent.id, {
         ...catForm,
@@ -36,21 +36,8 @@ export default function SellerDashboard() {
       setCreatedCat(cat)
     } catch (err) {
       setError(err.message)
-    }
-  }
-
-  async function handleSetContract(e) {
-    e.preventDefault()
-    setError(null)
-    try {
-      await updateCategoryContract(createdEvent.id, createdCat.id, {
-        contract_address: contractAddress,
-        tx_hash: txHash || null,
-        deployed_at: new Date().toISOString(),
-      })
-      setCreatedCat(prev => ({ ...prev, contract_address: contractAddress }))
-    } catch (err) {
-      setError(err.message)
+    } finally {
+      setDeploying(false)
     }
   }
 
@@ -89,7 +76,7 @@ export default function SellerDashboard() {
       {/* Step 2 — Add ticket category */}
       {createdEvent && !createdCat && (
         <form className="form-card" onSubmit={handleCreateCategory}>
-          <h2>Step 2 — Add Ticket Category</h2>
+          <h2>Step 2 — Add Ticket Category & Auto-Deploy Contract</h2>
           {[
             { key: 'name', label: 'Category name', required: true },
             { key: 'symbol', label: 'Token symbol (e.g. GA)', required: true },
@@ -103,53 +90,29 @@ export default function SellerDashboard() {
               <input
                 type={type}
                 required={required}
+                disabled={deploying}
                 value={catForm[key]}
                 onChange={e => setCatForm(prev => ({ ...prev, [key]: e.target.value }))}
               />
             </div>
           ))}
-          <button type="submit">Add Category</button>
+          <button type="submit" disabled={deploying}>
+            {deploying ? 'Deploying Smart Contract (~15s)...' : 'Add Category & Deploy'}
+          </button>
         </form>
       )}
 
-      {/* Step 3 — Link deployed contract */}
+      {/* Step 3 — Success & Deployed contract info */}
       {createdCat && (
-        <>
-          <div className="success-box">
-            Category: <strong>{createdCat.name}</strong> (ID: {createdCat.id})
-            {createdCat.contract_address && (
-              <> — contract: <code>{createdCat.contract_address}</code></>
-            )}
-          </div>
-          {!createdCat.contract_address && (
-            <form className="form-card" onSubmit={handleSetContract}>
-              <h2>Step 3 — Link Deployed Contract</h2>
-              <p className="muted" style={{ marginBottom: '1rem' }}>
-                Deploy the Ticket contract via <code>forge script</code> first, then paste the address here.
-              </p>
-              <div className="field">
-                <label>Contract address</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="0x…"
-                  value={contractAddress}
-                  onChange={e => setContractAddress(e.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label>Deploy tx hash (optional)</label>
-                <input
-                  type="text"
-                  placeholder="0x…"
-                  value={txHash}
-                  onChange={e => setTxHash(e.target.value)}
-                />
-              </div>
-              <button type="submit">Save Contract</button>
-            </form>
+        <div className="success-box" style={{ marginTop: '1rem' }}>
+          <h3>🎉 Success! Category Created & Deployed</h3>
+          <p>Category: <strong>{createdCat.name}</strong> (ID: {createdCat.id})</p>
+          <p>Symbol: <code>{createdCat.symbol}</code></p>
+          <p>Contract Address: <code>{createdCat.contract_address}</code></p>
+          {createdCat.tx_hash && (
+            <p>Tx Hash: <code style={{ fontSize: '0.85em' }}>{createdCat.tx_hash}</code></p>
           )}
-        </>
+        </div>
       )}
     </div>
   )
