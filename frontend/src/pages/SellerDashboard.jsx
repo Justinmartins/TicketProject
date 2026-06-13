@@ -40,6 +40,16 @@ export default function SellerDashboard() {
 
   const publicClient = usePublicClient()
   const [totalRevenue, setTotalRevenue] = useState(null)
+  const [ethRate, setEthRate] = useState(null)
+
+  useEffect(() => {
+    fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=eur')
+      .then(res => res.json())
+      .then(data => {
+        if (data.ethereum?.eur) setEthRate(data.ethereum.eur)
+      })
+      .catch(console.error)
+  }, [])
 
   useEffect(() => {
     async function fetchRevenue() {
@@ -208,13 +218,29 @@ export default function SellerDashboard() {
                 </div>
                 <div className="field">
                   <label>Price in EUR</label>
-                  <input type="number" required placeholder="e.g. 50" min="0" step="0.01" value={form.price_eur} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], price_eur: e.target.value }; setCatForms(newForms); }} />
+                  <div style={{ position: 'relative' }}>
+                    <input type="number" required placeholder="e.g. 50" min="0" step="0.01" value={form.price_eur} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], price_eur: e.target.value }; setCatForms(newForms); }} style={{ width: '100%' }} />
+                    {ethRate && form.price_eur && (
+                      <div style={{ fontSize: '0.75rem', marginTop: '0.3rem', color: 'var(--text-2)', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>≈ {(Number(form.price_eur) / ethRate).toFixed(4)} ETH</span>
+                        <button type="button" style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }} onClick={() => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], price_eth: (Number(form.price_eur) / ethRate).toFixed(4) }; setCatForms(newForms); }}>Use this ETH price</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <div className="form-row">
                 <div className="field">
                   <label>Price in ETH <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(Blockchain)</span></label>
-                  <input type="number" step="0.000001" required placeholder="e.g. 0.05" value={form.price_eth} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], price_eth: e.target.value }; setCatForms(newForms); }} />
+                  <div style={{ position: 'relative' }}>
+                    <input type="number" step="0.000001" required placeholder="e.g. 0.05" value={form.price_eth} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], price_eth: e.target.value }; setCatForms(newForms); }} style={{ width: '100%' }} />
+                    {ethRate && form.price_eth && (
+                      <div style={{ fontSize: '0.75rem', marginTop: '0.3rem', color: 'var(--text-2)', display: 'flex', justifyContent: 'space-between' }}>
+                        <span>≈ {(Number(form.price_eth) * ethRate).toFixed(2)} EUR</span>
+                        <button type="button" style={{ background: 'none', border: 'none', padding: 0, color: 'var(--accent)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }} onClick={() => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], price_eur: (Number(form.price_eth) * ethRate).toFixed(2) }; setCatForms(newForms); }}>Use this EUR price</button>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="field">
                   <label>Ticket Illustration <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(IPFS NFT image)</span></label>
