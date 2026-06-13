@@ -72,11 +72,17 @@ export default function EventList() {
         ) : (
           <div className="event-grid">
             {filtered.map(event => (
-              <Link key={event.id} to={`/events/${event.id}`} className="event-card">
-                <p className="event-card-label">Event</p>
-                <h2>{event.name}</h2>
-                <div className="event-card-divider" />
-                <p>{event.venue}</p>
+              <Link key={event.id} to={`/events/${event.id}`} className="event-card" style={{ padding: event.banner_url ? 0 : '1.25rem', overflow: 'hidden' }}>
+                {event.banner_url && (
+                  <div style={{ width: '100%', height: '140px', overflow: 'hidden' }}>
+                    <img src={`https://gateway.pinata.cloud/ipfs/${event.banner_url}`} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
+                <div style={{ padding: event.banner_url ? '1rem 1.25rem 1.25rem' : 0, display: 'flex', flexDirection: 'column', gap: '.6rem', flex: 1 }}>
+                  <p className="event-card-label">Event</p>
+                  <h2>{event.name}</h2>
+                  <div className="event-card-divider" />
+                  <p>{event.venue}</p>
                 <div className="event-card-meta">
                   <span className="badge badge-amber">
                     {new Date(event.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -86,6 +92,7 @@ export default function EventList() {
                       {event.ticket_categories.length} tier{event.ticket_categories.length > 1 ? 's' : ''}
                     </span>
                   )}
+                </div>
                 </div>
               </Link>
             ))}

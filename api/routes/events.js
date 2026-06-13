@@ -1,8 +1,11 @@
 const { Router } = require('express');
+const multer = require('multer');
 const service = require('../domain/eventService');
 const purchaseRouter = require('./purchase');
+const { uploadFileToIPFS, uploadJsonToIPFS } = require('../infrastructure/pinata');
 
 const router = Router();
+const upload = multer({ storage: multer.memoryStorage() });
 
 /**
  * @swagger
@@ -61,9 +64,14 @@ router.get('/', (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/', (req, res) => {
+router.post('/', upload.single('banner'), async (req, res) => {
   try {
-    const event = service.createEvent(req.body);
+    const data = { ...req.body };
+    if (req.file) {
+      const hash = await uploadFileToIPFS(req.file.buffer, req.file.originalname, req.file.mimetype);
+      data.banner_url = hash;
+    }
+    const event = service.createEvent(data);
     res.status(201).json(event);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -144,9 +152,23 @@ router.get('/:id', (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/:id/categories', async (req, res) => {
+router.post('/:id/categories', upload.single('image'), async (req, res) => {
   try {
-    const category = await service.createTicketCategory(Number(req.params.id), req.body);
+    const data = { ...req.body };
+    
+    // If an image was uploaded, pin it and generate metadata
+    if (req.file) {
+      const imageHash = await uploadFileToIPFS(req.file.buffer, req.file.originalname, req.file.mimetype);
+      const metadata = {
+        name: data.name,
+        description: `Ticket for event #${req.params.id}`,
+        image: `https://gateway.pinata.cloud/ipfs/${imageHash}`
+      };
+      const metaHash = await uploadJsonToIPFS(metadata);
+      data.ticket_uri = `https://gateway.pinata.cloud/ipfs/${metaHash}`;
+    }
+
+    const category = await service.createTicketCategory(Number(req.params.id), data);
     res.status(201).json(category);
   } catch (err) {
     res.status(400).json({ error: err.message });

@@ -12,19 +12,23 @@ export const getEvents = () =>
 export const getEvent = id =>
   fetch(`${BASE}/events/${id}`).then(json)
 
-export const createEvent = data =>
-  fetch(`${BASE}/events`, {
+export const createEvent = data => {
+  const isFormData = data instanceof FormData;
+  return fetch(`${BASE}/events`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  }).then(json)
+    headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+    body: isFormData ? data : JSON.stringify(data),
+  }).then(json);
+};
 
-export const createCategory = (eventId, data) =>
-  fetch(`${BASE}/events/${eventId}/categories`, {
+export const createCategory = (eventId, data) => {
+  const isFormData = data instanceof FormData;
+  return fetch(`${BASE}/events/${eventId}/categories`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  }).then(json)
+    headers: isFormData ? {} : { 'Content-Type': 'application/json' },
+    body: isFormData ? data : JSON.stringify(data),
+  }).then(json);
+};
 
 export const updateCategoryContract = (eventId, catId, data) =>
   fetch(`${BASE}/events/${eventId}/categories/${catId}/contract`, {

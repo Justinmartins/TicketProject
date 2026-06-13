@@ -3,8 +3,8 @@ import { createEvent, createCategory, getEvents, withdrawRevenue } from '../api'
 import { parseEther } from 'viem'
 import { usePublicClient } from 'wagmi'
 
-const EMPTY_EVENT = { name: '', description: '', venue: '', event_date: '', seller: '' }
-const EMPTY_CAT = { name: '', symbol: '', max_supply: '', price_eth: '', price_eur: '', ticket_uri: '' }
+const EMPTY_EVENT = { name: '', description: '', venue: '', event_date: '', seller: '', banner: null }
+const EMPTY_CAT = { name: '', symbol: '', max_supply: '', price_eth: '', price_eur: '', image: null }
 
 function StepIndicator({ current }) {
   const steps = ['Event', 'Tier']
@@ -32,10 +32,11 @@ function StepIndicator({ current }) {
 export default function SellerDashboard() {
   const [eventForm, setEventForm] = useState(EMPTY_EVENT)
   const [createdEvent, setCreatedEvent] = useState(null)
-  const [catForm, setCatForm] = useState(EMPTY_CAT)
+  const [catForms, setCatForms] = useState([EMPTY_CAT])
   const [createdCat, setCreatedCat] = useState(null)
   const [error, setError] = useState(null)
   const [withdrawing, setWithdrawing] = useState(false)
+  const [creating, setCreating] = useState(false)
 
   const publicClient = usePublicClient()
   const [totalRevenue, setTotalRevenue] = useState(null)
@@ -84,20 +85,35 @@ export default function SellerDashboard() {
 
   async function handleCreateEvent(e) {
     e.preventDefault(); setError(null)
-    try { setCreatedEvent(await createEvent(eventForm)) } catch (err) { setError(err.message) }
+    try { 
+      const formData = new FormData();
+      for (const key in eventForm) {
+        if (key === 'banner' && !eventForm[key]) continue;
+        formData.append(key, eventForm[key]);
+      }
+      setCreatedEvent(await createEvent(formData));
+    } catch (err) { setError(err.message) }
   }
-  async function handleCreateCategory(e) {
-    e.preventDefault(); setError(null)
+
+  async function handleCreateCategories(e) {
+    e.preventDefault(); setError(null); setCreating(true);
     try {
-      const priceWei = parseEther(catForm.price_eth || '0').toString();
-      setCreatedCat(await createCategory(createdEvent.id, {
-        ...catForm,
-        max_supply: Number(catForm.max_supply),
-        price_eur: Number(catForm.price_eur),
-        price_wei: priceWei
-      }))
+      for (const form of catForms) {
+        const priceWei = parseEther(form.price_eth || '0').toString();
+        const formData = new FormData();
+        for (const key in form) {
+          if (key === 'image' && !form[key]) continue;
+          if (key !== 'price_eth') {
+             formData.append(key, form[key]);
+          }
+        }
+        formData.append('price_wei', priceWei);
+        await createCategory(createdEvent.id, formData);
+      }
+      setCreatedCat(true);
     }
     catch (err) { setError(err.message) }
+    finally { setCreating(false) }
   }
 
   return (
@@ -114,8 +130,7 @@ export default function SellerDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
             <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, lineHeight: 1.2 }}>
               {totalRevenue !== null ? `${totalRevenue} ETH` : 'Loading...'}
-            </p>
-            {totalRevenue !== null && Number(totalRevenue) > 0 && (
+            </p>            {totalRevenue !== null && Number(totalRevenue) > 0 && (
               <button 
                 onClick={handleWithdraw} 
                 disabled={withdrawing}
@@ -170,60 +185,72 @@ export default function SellerDashboard() {
             <label>Description <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(optional)</span></label>
             <textarea placeholder="Tell your attendees what this event is about..." value={eventForm.description} onChange={e => setEventForm(prev => ({ ...prev, description: e.target.value }))} />
           </div>
+          <div className="field">
+            <label>Event Banner <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(will be uploaded to Pinata)</span></label>
+            <input type="file" accept="image/*" onChange={e => setEventForm(prev => ({ ...prev, banner: e.target.files[0] }))} />
+          </div>
           <button type="submit" style={{ marginTop: '.5rem', width: '100%', padding: '.75rem' }}>Create Event &rarr;</button>
         </form>
       )}
 
-      {createdEvent && createdCat && (
-        <div className="success-box">
-          <span className="success-box-icon">&#10003;</span>
-          Tier created: <strong style={{ marginLeft: '.3rem' }}>{createdCat.name}</strong>
-          {createdCat.contract_address && <code style={{ marginLeft: '.5rem', fontSize: '.77rem', opacity: .75 }}>{createdCat.contract_address}</code>}
-        </div>
-      )}
-
       {createdEvent && !createdCat && (
-        <form className="form-card" onSubmit={handleCreateCategory}>
-          <h2>Step 2 — Add a ticket tier</h2>
-          <div className="form-row">
-            <div className="field">
-              <label>Tier name</label>
-              <input type="text" required placeholder="e.g. General Admission" value={catForm.name} onChange={e => setCatForm(prev => ({ ...prev, name: e.target.value }))} />
-            </div>
-            <div className="field">
-              <label>Token symbol</label>
-              <input type="text" required placeholder="e.g. GA" value={catForm.symbol} onChange={e => setCatForm(prev => ({ ...prev, symbol: e.target.value }))} />
-            </div>
+        <form className="form-card" onSubmit={handleCreateCategories}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+            <h2 style={{ margin: 0 }}>Step 2 — Add ticket tiers</h2>
+            <button type="button" className="btn-outline" style={{ width: '32px', height: '32px', padding: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', lineHeight: 1 }} onClick={() => setCatForms(prev => [...prev, { ...EMPTY_CAT }])} title="Add another tier">+</button>
           </div>
-          <div className="form-row">
-            <div className="field">
-              <label>Max supply</label>
-              <input type="number" required placeholder="e.g. 500" min="1" value={catForm.max_supply} onChange={e => setCatForm(prev => ({ ...prev, max_supply: e.target.value }))} />
+          
+          {catForms.map((form, index) => (
+            <div key={index} style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: index < catForms.length - 1 ? '1px solid var(--border)' : 'none' }}>
+              {catForms.length > 1 && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}><h3 style={{ margin: 0, fontSize: '.9rem', color: 'var(--text-2)' }}>Tier #{index + 1}</h3><button type="button" className="btn-ghost" style={{ padding: '0.2rem 0.5rem', color: 'var(--red)', fontSize: '.8rem' }} onClick={() => setCatForms(prev => prev.filter((_, i) => i !== index))}>Remove</button></div>}
+              
+              <div className="form-row">
+                <div className="field">
+                  <label>Tier name</label>
+                  <input type="text" required placeholder="e.g. General Admission" value={form.name} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], name: e.target.value }; setCatForms(newForms); }} />
+                </div>
+                <div className="field">
+                  <label>Token symbol</label>
+                  <input type="text" required placeholder="e.g. GA" value={form.symbol} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], symbol: e.target.value }; setCatForms(newForms); }} />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="field">
+                  <label>Max supply</label>
+                  <input type="number" required placeholder="e.g. 500" min="1" value={form.max_supply} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], max_supply: e.target.value }; setCatForms(newForms); }} />
+                </div>
+                <div className="field">
+                  <label>Price in EUR</label>
+                  <input type="number" required placeholder="e.g. 50" min="0" step="0.01" value={form.price_eur} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], price_eur: e.target.value }; setCatForms(newForms); }} />
+                </div>
+              </div>
+              <div className="form-row">
+                <div className="field">
+                  <label>Price in ETH <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(Blockchain)</span></label>
+                  <input type="number" step="0.000001" required placeholder="e.g. 0.05" value={form.price_eth} onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], price_eth: e.target.value }; setCatForms(newForms); }} />
+                </div>
+                <div className="field">
+                  <label>Ticket Illustration <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(IPFS NFT image)</span></label>
+                  <input type="file" accept="image/*" onChange={e => { const newForms = [...catForms]; newForms[index] = { ...newForms[index], image: e.target.files[0] }; setCatForms(newForms); }} />
+                </div>
+              </div>
             </div>
-            <div className="field">
-              <label>Price in EUR</label>
-              <input type="number" required placeholder="e.g. 50" min="0" step="0.01" value={catForm.price_eur} onChange={e => setCatForm(prev => ({ ...prev, price_eur: e.target.value }))} />
-            </div>
-          </div>
-          <div className="form-row">
-            <div className="field">
-              <label>Price in ETH <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(Blockchain)</span></label>
-              <input type="number" step="0.000001" required placeholder="e.g. 0.05" value={catForm.price_eth} onChange={e => setCatForm(prev => ({ ...prev, price_eth: e.target.value }))} />
-            </div>
-            <div className="field">
-              <label>Ticket URI <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(optional)</span></label>
-              <input type="text" placeholder="ipfs://..." value={catForm.ticket_uri} onChange={e => setCatForm(prev => ({ ...prev, ticket_uri: e.target.value }))} />
-            </div>
-          </div>
-          <button type="submit" style={{ marginTop: '.5rem', width: '100%', padding: '.75rem' }}>Deploy Ticket Tier &rarr;</button>
+          ))}
+          <button type="submit" disabled={creating} style={{ marginTop: '.5rem', width: '100%', padding: '.75rem' }}>{creating ? 'Deploying Tiers...' : 'Deploy Ticket Tiers \u2192'}</button>
         </form>
       )}
 
 
       {createdCat && (
-        <div className="success-box" style={{ marginTop: '.5rem' }}>
-          <span className="success-box-icon">&#10003;</span>
-          All done! Your event is live and tickets are available for sale.
+        <div className="form-card" style={{ textAlign: 'center', padding: '2rem 1.5rem', marginTop: '1.5rem' }}>
+          <div className="success-box" style={{ justifyContent: 'center' }}>
+            <span className="success-box-icon">&#10003;</span>
+            Tiers deployed successfully!
+          </div>
+          <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <button className="btn-outline" onClick={() => { setCreatedEvent(null); setCreatedCat(null); setEventForm(EMPTY_EVENT); setCatForms([EMPTY_CAT]) }}>Create new event</button>
+            <a href={`/events/${createdEvent.id}`}><button>View Event Page</button></a>
+          </div>
         </div>
       )}
     </div>

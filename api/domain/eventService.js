@@ -2,7 +2,7 @@ const db = require('../infrastructure/db');
 const { deployTicketContract, withdrawFromContract, getContractBalance } = require('../infrastructure/chain');
 
 function createEvent(data) {
-  const { name, venue, event_date, seller } = data;
+  const { name, venue, event_date, seller, banner_url } = data;
   if (!name || !venue || !event_date || !seller) {
     throw new Error('name, venue, event_date and seller are required');
   }

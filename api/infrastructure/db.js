@@ -1,11 +1,11 @@
 const db = require('../../db/setup');
 
-function createEvent({ name, description, venue, event_date, seller }) {
+function createEvent({ name, description, venue, event_date, seller, banner_url }) {
   const stmt = db.prepare(`
-    INSERT INTO events (name, description, venue, event_date, seller)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO events (name, description, venue, event_date, seller, banner_url)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
-  const result = stmt.run(name, description, venue, event_date, seller);
+  const result = stmt.run(name, description, venue, event_date, seller, banner_url || null);
   return getEventById(result.lastInsertRowid);
 }
 
