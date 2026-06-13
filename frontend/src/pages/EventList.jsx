@@ -26,6 +26,48 @@ function SkeletonCard() {
   )
 }
 
+function EventCard({ event, isPast }) {
+  const content = (
+    <>
+      {event.banner_url && (
+        <div style={{ width: '100%', height: '140px', overflow: 'hidden' }}>
+          <img src={`https://gateway.pinata.cloud/ipfs/${event.banner_url}`} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
+      <div style={{ padding: event.banner_url ? '1rem 1.25rem 1.25rem' : 0, display: 'flex', flexDirection: 'column', gap: '.6rem', flex: 1 }}>
+        <p className="event-card-label">Event</p>
+        <h2>{event.name}</h2>
+        <div className="event-card-divider" />
+        <p>{event.venue}</p>
+        <div className="event-card-meta">
+          <span className="badge badge-amber">
+            {new Date(event.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </span>
+          {event.ticket_categories?.length > 0 && (
+            <span className="badge badge-gray">
+              {event.ticket_categories.length} tier{event.ticket_categories.length > 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+      </div>
+    </>
+  )
+
+  if (isPast) {
+    return (
+      <div className="event-card" style={{ padding: event.banner_url ? 0 : '1.25rem', overflow: 'hidden', cursor: 'not-allowed', filter: 'grayscale(100%)' }}>
+        {content}
+      </div>
+    )
+  }
+
+  return (
+    <Link to={`/events/${event.id}`} className="event-card" style={{ padding: event.banner_url ? 0 : '1.25rem', overflow: 'hidden' }}>
+      {content}
+    </Link>
+  )
+}
+
 export default function EventList() {
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
@@ -41,12 +83,25 @@ export default function EventList() {
     e.venue.toLowerCase().includes(search.toLowerCase())
   )
 
+  const isPastEvent = (dateStr) => {
+    if (!dateStr) return false;
+    const eventDate = new Date(dateStr);
+    if (isNaN(eventDate.getTime())) return false;
+    
+    // Un événement est considéré "passé" 24h après sa date (le lendemain)
+    const pastTime = eventDate.getTime() + (24 * 60 * 60 * 1000);
+    return pastTime < new Date().getTime();
+  }
+
+  const upcomingEvents = filtered.filter(e => !isPastEvent(e.event_date))
+  const pastEvents = filtered.filter(e => isPastEvent(e.event_date))
+
   return (
     <div className="home-layout">
       <main className="home-main fade-up">
         <div className="page-header">
           <p className="page-eyebrow">Online ticketing</p>
-          <h1>Upcoming Events</h1>
+          <h1>Events</h1>
         </div>
 
         <div className="search-bar">
@@ -70,32 +125,28 @@ export default function EventList() {
             {!search && <Link to="/seller"><button style={{ marginTop: '.5rem' }}>Create an event</button></Link>}
           </div>
         ) : (
-          <div className="event-grid">
-            {filtered.map(event => (
-              <Link key={event.id} to={`/events/${event.id}`} className="event-card" style={{ padding: event.banner_url ? 0 : '1.25rem', overflow: 'hidden' }}>
-                {event.banner_url && (
-                  <div style={{ width: '100%', height: '140px', overflow: 'hidden' }}>
-                    <img src={`https://gateway.pinata.cloud/ipfs/${event.banner_url}`} alt="Banner" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
-                )}
-                <div style={{ padding: event.banner_url ? '1rem 1.25rem 1.25rem' : 0, display: 'flex', flexDirection: 'column', gap: '.6rem', flex: 1 }}>
-                  <p className="event-card-label">Event</p>
-                  <h2>{event.name}</h2>
-                  <div className="event-card-divider" />
-                  <p>{event.venue}</p>
-                <div className="event-card-meta">
-                  <span className="badge badge-amber">
-                    {new Date(event.event_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  </span>
-                  {event.ticket_categories?.length > 0 && (
-                    <span className="badge badge-gray">
-                      {event.ticket_categories.length} tier{event.ticket_categories.length > 1 ? 's' : ''}
-                    </span>
-                  )}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+            {upcomingEvents.length > 0 && (
+              <div>
+                <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem' }}>Upcoming Events</h2>
+                <div className="event-grid">
+                  {upcomingEvents.map(event => (
+                    <EventCard key={event.id} event={event} />
+                  ))}
                 </div>
+              </div>
+            )}
+            
+            {pastEvents.length > 0 && (
+              <div>
+                <h2 style={{ fontSize: '1.2rem', marginBottom: '1rem', color: 'var(--text-2)', marginTop: upcomingEvents.length > 0 ? '1rem' : '0' }}>Past Events</h2>
+                <div className="event-grid" style={{ opacity: 0.75 }}>
+                  {pastEvents.map(event => (
+                    <EventCard key={event.id} event={event} isPast={true} />
+                  ))}
                 </div>
-              </Link>
-            ))}
+              </div>
+            )}
           </div>
         )}
       </main>
