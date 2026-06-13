@@ -17,7 +17,11 @@ function getEvent(id) {
 }
 
 function listEvents() {
-  return db.getAllEvents();
+  const events = db.getAllEvents();
+  return events.map(e => ({
+    ...e,
+    ticket_categories: db.getCategoriesByEventId(e.id)
+  }));
 }
 
 async function createTicketCategory(event_id, data) {

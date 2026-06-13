@@ -4,6 +4,7 @@ import { getEvent } from '../api'
 import { useCart } from '../context/CartContext'
 import { useAccount } from 'wagmi'
 import ConnectWallet from '../components/ConnectWallet'
+import SidebarCart from '../components/SidebarCart'
 
 const TicketSvg = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -36,22 +37,29 @@ export default function EventDetail() {
   }
 
   if (loading) return (
-    <div className="page fade-up">
-      <div className="skeleton" style={{ height: 30, width: '45%', marginBottom: '1rem' }} />
-      <div className="skeleton" style={{ height: 14, width: '30%', marginBottom: '2rem' }} />
-      {[1, 2].map(i => <div key={i} className="skeleton" style={{ height: 130, borderRadius: 10, marginBottom: '1rem' }} />)}
+    <div className="home-layout">
+      <main className="home-main fade-up">
+        <div className="skeleton" style={{ height: 30, width: '45%', marginBottom: '1rem' }} />
+        <div className="skeleton" style={{ height: 14, width: '30%', marginBottom: '2rem' }} />
+        {[1, 2].map(i => <div key={i} className="skeleton" style={{ height: 130, borderRadius: 10, marginBottom: '1rem' }} />)}
+      </main>
+      <SidebarCart />
     </div>
   )
 
   if (error) return (
-    <div className="page fade-up">
-      <div className="error-box">Error: {error}</div>
-      <Link to="/">Back to events</Link>
+    <div className="home-layout">
+      <main className="home-main fade-up">
+        <div className="error-box">Error: {error}</div>
+        <Link to="/">Back to events</Link>
+      </main>
+      <SidebarCart />
     </div>
   )
 
   return (
-    <div className="page fade-up">
+    <div className="home-layout">
+      <main className="home-main fade-up">
       <Link to="/" className="muted" style={{ display: 'inline-flex', alignItems: 'center', gap: '.3rem', marginBottom: '1.5rem', fontSize: '.85rem', fontWeight: 500, color: 'var(--text-2)' }}>
         &larr; All events
       </Link>
@@ -114,11 +122,8 @@ export default function EventDetail() {
         </div>
       ))}
 
-      <div style={{ marginTop: '1.5rem' }}>
-        <button onClick={() => navigate('/checkout')}>
-          View cart{totalItems > 0 ? ` (${totalItems})` : ''} &rarr;
-        </button>
-      </div>
+      </main>
+      <SidebarCart />
     </div>
   )
 }

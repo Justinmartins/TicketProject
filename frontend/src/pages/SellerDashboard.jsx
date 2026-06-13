@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { createEvent, createCategory } from '../api'
+import { parseEther } from 'viem'
 
 const EMPTY_EVENT = { name: '', description: '', venue: '', event_date: '', seller: '' }
-const EMPTY_CAT = { name: '', symbol: '', max_supply: '', price_wei: '', price_eur: '', ticket_uri: '' }
+const EMPTY_CAT = { name: '', symbol: '', max_supply: '', price_eth: '', price_eur: '', ticket_uri: '' }
 
 function StepIndicator({ current }) {
   const steps = ['Event', 'Tier']
@@ -42,7 +43,15 @@ export default function SellerDashboard() {
   }
   async function handleCreateCategory(e) {
     e.preventDefault(); setError(null)
-    try { setCreatedCat(await createCategory(createdEvent.id, { ...catForm, max_supply: Number(catForm.max_supply), price_eur: Number(catForm.price_eur) })) }
+    try { 
+      const priceWei = parseEther(catForm.price_eth || '0').toString();
+      setCreatedCat(await createCategory(createdEvent.id, { 
+        ...catForm, 
+        max_supply: Number(catForm.max_supply), 
+        price_eur: Number(catForm.price_eur),
+        price_wei: priceWei
+      })) 
+    }
     catch (err) { setError(err.message) }
   }
 
@@ -128,8 +137,8 @@ export default function SellerDashboard() {
           </div>
           <div className="form-row">
             <div className="field">
-              <label>Price in Wei <span className="muted" style={{textTransform:'none', fontWeight:500}}>(Blockchain)</span></label>
-              <input type="text" required placeholder="e.g. 10000000000000000" value={catForm.price_wei} onChange={e => setCatForm(prev => ({ ...prev, price_wei: e.target.value }))} />
+              <label>Price in ETH <span className="muted" style={{textTransform:'none', fontWeight:500}}>(Blockchain)</span></label>
+              <input type="number" step="0.000001" required placeholder="e.g. 0.05" value={catForm.price_eth} onChange={e => setCatForm(prev => ({ ...prev, price_eth: e.target.value }))} />
             </div>
             <div className="field">
               <label>Ticket URI <span className="muted" style={{textTransform:'none', fontWeight:500}}>(optional)</span></label>
