@@ -2,15 +2,72 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { getEvent } from '../api'
 import { useCart } from '../context/CartContext'
-import { useAccount } from 'wagmi'
+import { useAccount, useReadContract } from 'wagmi'
 import ConnectWallet from '../components/ConnectWallet'
 import SidebarCart from '../components/SidebarCart'
+import { TICKET_ABI } from '../abi'
 
 const TicketSvg = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
     <path d="M2 9a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1a2 2 0 0 0 0 4v1a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1a2 2 0 0 0 0-4V9z"/>
   </svg>
 )
+
+function TicketCategoryCard({ cat, isConnected, getQty, setQty, handleAdd, added }) {
+  const { data: totalSupply } = useReadContract({
+    address: cat.contract_address,
+    abi: TICKET_ABI,
+    functionName: 'totalSupply',
+    enabled: !!cat.contract_address,
+  })
+
+  const isSoldOut = totalSupply !== undefined && Number(totalSupply) >= cat.max_supply
+
+  return (
+    <div className="category-card">
+      <div className="category-card-header">
+        <div>
+          <h3>{cat.name} <span className="badge badge-blue" style={{ marginLeft: '.4rem' }}>{cat.symbol}</span></h3>
+          <p style={{ marginTop: '.3rem' }}>
+            Max supply: {Number(cat.max_supply).toLocaleString()}
+            {totalSupply !== undefined && ` (Sold: ${Number(totalSupply).toLocaleString()})`}
+          </p>
+        </div>
+        <div className="price-tag">
+          <span className="price-eur">€{Number(cat.price_eur).toFixed(2)}</span>
+          <span className="price-eth">{(Number(cat.price_wei) / 1e18).toFixed(6)} ETH</span>
+        </div>
+      </div>
+
+      {cat.contract_address ? (
+        isConnected ? (
+          isSoldOut ? (
+            <div className="error-box" style={{ marginTop: '.75rem', marginBottom: 0, padding: '.6rem 1rem' }}>
+              <span style={{ fontWeight: 700 }}>Sold Out!</span> All tickets for this tier have been purchased.
+            </div>
+          ) : (
+            <div className="quantity-row" style={{ marginTop: '.75rem' }}>
+              <button className="btn-small" onClick={() => setQty(cat.id, getQty(cat.id) - 1)}>−</button>
+              <span className="basket-qty">{getQty(cat.id)}</span>
+              <button className="btn-small" onClick={() => setQty(cat.id, getQty(cat.id) + 1)}>+</button>
+              <button onClick={() => handleAdd(cat)} disabled={added[cat.id]}
+                style={added[cat.id] ? { background: 'var(--green-l)', color: 'var(--green)', border: '1px solid #a7f3d0' } : {}}>
+                {added[cat.id] ? 'Added to cart' : 'Add to cart'}
+              </button>
+            </div>
+          )
+        ) : (
+          <div style={{ marginTop: '.75rem' }}>
+            <p className="muted" style={{ marginBottom: '.5rem', fontSize: '.8rem' }}>Connect your wallet to purchase tickets</p>
+            <ConnectWallet />
+          </div>
+        )
+      ) : (
+        <p className="muted" style={{ marginTop: '.75rem' }}>Contract not yet deployed</p>
+      )}
+    </div>
+  )
+}
 
 export default function EventDetail() {
   const { id } = useParams()
@@ -87,39 +144,15 @@ export default function EventDetail() {
           <p style={{ color: 'var(--text)' }}>No ticket tiers available.</p>
         </div>
       ) : event.ticket_categories.map(cat => (
-        <div key={cat.id} className="category-card">
-          <div className="category-card-header">
-            <div>
-              <h3>{cat.name} <span className="badge badge-blue" style={{ marginLeft: '.4rem' }}>{cat.symbol}</span></h3>
-              <p style={{ marginTop: '.3rem' }}>Max supply: {Number(cat.max_supply).toLocaleString()}</p>
-            </div>
-            <div className="price-tag">
-              <span className="price-eur">€{Number(cat.price_eur).toFixed(2)}</span>
-              <span className="price-eth">{(Number(cat.price_wei) / 1e18).toFixed(6)} ETH</span>
-            </div>
-          </div>
-
-          {cat.contract_address ? (
-            isConnected ? (
-              <div className="quantity-row" style={{ marginTop: '.75rem' }}>
-                <button className="btn-small" onClick={() => setQty(cat.id, getQty(cat.id) - 1)}>−</button>
-                <span className="basket-qty">{getQty(cat.id)}</span>
-                <button className="btn-small" onClick={() => setQty(cat.id, getQty(cat.id) + 1)}>+</button>
-                <button onClick={() => handleAdd(cat)} disabled={added[cat.id]}
-                  style={added[cat.id] ? { background: 'var(--green-l)', color: 'var(--green)', border: '1px solid #a7f3d0' } : {}}>
-                  {added[cat.id] ? 'Added to cart' : 'Add to cart'}
-                </button>
-              </div>
-            ) : (
-              <div style={{ marginTop: '.75rem' }}>
-                <p className="muted" style={{ marginBottom: '.5rem', fontSize: '.8rem' }}>Connect your wallet to purchase tickets</p>
-                <ConnectWallet />
-              </div>
-            )
-          ) : (
-            <p className="muted" style={{ marginTop: '.75rem' }}>Contract not yet deployed</p>
-          )}
-        </div>
+        <TicketCategoryCard 
+          key={cat.id} 
+          cat={cat} 
+          isConnected={isConnected} 
+          getQty={getQty} 
+          setQty={setQty} 
+          handleAdd={handleAdd} 
+          added={added} 
+        />
       ))}
 
       </main>
