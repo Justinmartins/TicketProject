@@ -7,7 +7,7 @@ const EMPTY_EVENT = { name: '', description: '', venue: '', event_date: '', sell
 const EMPTY_CAT = { name: '', symbol: '', max_supply: '', price_eth: '', price_eur: '', image: null }
 
 function StepIndicator({ current }) {
-  const steps = ['Event', 'Tier']
+  const steps = ['Details & Tiers', 'Live']
   return (
     <>
       <div className="step-indicator">
@@ -64,7 +64,7 @@ export default function SellerDashboard() {
     if (publicClient) fetchRevenue()
   }, [publicClient, createdCat])
 
-  const currentStep = !createdEvent ? 1 : !createdCat ? 2 : 3
+  const currentStep = !createdCat ? 1 : 2
 
   async function handleWithdraw() {
     if (!totalRevenue || totalRevenue === '0.0000') return
@@ -73,9 +73,7 @@ export default function SellerDashboard() {
     try {
       const result = await withdrawRevenue()
       alert(`Success! Withdrawn from ${result.successful} out of ${result.attempted} contracts.`)
-      // Refresh revenue
-      setTotalRevenue('0.0000') // Since it's withdrawn, it'll drop to 0. 
-      // Ideally we re-fetch, but it takes time to mine. We'll set it manually.
+      setTotalRevenue('0.0000') 
     } catch (err) {
       setError("Withdraw failed: " + err.message)
     } finally {
@@ -83,37 +81,37 @@ export default function SellerDashboard() {
     }
   }
 
-  async function handleCreateEvent(e) {
-    e.preventDefault(); setError(null)
-    try { 
-      const formData = new FormData();
-      for (const key in eventForm) {
-        if (key === 'banner' && !eventForm[key]) continue;
-        formData.append(key, eventForm[key]);
-      }
-      setCreatedEvent(await createEvent(formData));
-    } catch (err) { setError(err.message) }
-  }
-
-  async function handleCreateCategories(e) {
+  async function handleCreateEverything(e) {
     e.preventDefault(); setError(null); setCreating(true);
     try {
+      // 1. Create Event
+      const eventFormData = new FormData();
+      for (const key in eventForm) {
+        if (key === 'banner' && !eventForm[key]) continue;
+        eventFormData.append(key, eventForm[key]);
+      }
+      const newEvent = await createEvent(eventFormData);
+      setCreatedEvent(newEvent);
+
+      // 2. Create Categories
       for (const form of catForms) {
         const priceWei = parseEther(form.price_eth || '0').toString();
-        const formData = new FormData();
+        const catFormData = new FormData();
         for (const key in form) {
           if (key === 'image' && !form[key]) continue;
           if (key !== 'price_eth') {
-             formData.append(key, form[key]);
+             catFormData.append(key, form[key]);
           }
         }
-        formData.append('price_wei', priceWei);
-        await createCategory(createdEvent.id, formData);
+        catFormData.append('price_wei', priceWei);
+        await createCategory(newEvent.id, catFormData);
       }
       setCreatedCat(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCreating(false);
     }
-    catch (err) { setError(err.message) }
-    finally { setCreating(false) }
   }
 
   return (
@@ -131,8 +129,8 @@ export default function SellerDashboard() {
             <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, lineHeight: 1.2 }}>
               {totalRevenue !== null ? `${totalRevenue} ETH` : 'Loading...'}
             </p>            {totalRevenue !== null && Number(totalRevenue) > 0 && (
-              <button 
-                onClick={handleWithdraw} 
+              <button
+                onClick={handleWithdraw}
                 disabled={withdrawing}
                 style={{ background: 'var(--green)', color: 'white', padding: '0.35rem 0.8rem', fontSize: '0.8rem', borderRadius: '999px', boxShadow: 'none', border: 'none' }}
               >
@@ -152,17 +150,9 @@ export default function SellerDashboard() {
 
       {error && <div className="error-box" style={{ marginBottom: '1.5rem' }}>Error: {error}</div>}
 
-      {createdEvent && (
-        <div className="success-box">
-          <span className="success-box-icon">&#10003;</span>
-          Event created: <strong style={{ marginLeft: '.3rem' }}>{createdEvent.name}</strong>
-          <span className="muted" style={{ marginLeft: '.5rem' }}>ID #{createdEvent.id}</span>
-        </div>
-      )}
-
-      {!createdEvent && (
-        <form className="form-card" onSubmit={handleCreateEvent}>
-          <h2>Step 1 — Create an event</h2>
+      {!createdCat && (
+        <form className="form-card" onSubmit={handleCreateEverything}>
+          <h2>Event Details</h2>
           <div className="field">
             <label>Event name</label>
             <input type="text" required placeholder="e.g. Summer Music Festival" value={eventForm.name} onChange={e => setEventForm(prev => ({ ...prev, name: e.target.value }))} />
@@ -178,28 +168,25 @@ export default function SellerDashboard() {
             </div>
           </div>
           <div className="field">
-            <label>Seller address / name</label>
-            <input type="text" required placeholder="0x... or your brand name" value={eventForm.seller} onChange={e => setEventForm(prev => ({ ...prev, seller: e.target.value }))} />
+            <label>Seller name</label>
+            <input type="text" required placeholder="Your brand name" value={eventForm.seller} onChange={e => setEventForm(prev => ({ ...prev, seller: e.target.value }))} />
           </div>
           <div className="field">
             <label>Description <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(optional)</span></label>
             <textarea placeholder="Tell your attendees what this event is about..." value={eventForm.description} onChange={e => setEventForm(prev => ({ ...prev, description: e.target.value }))} />
           </div>
           <div className="field">
-            <label>Event Banner <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(will be uploaded to Pinata)</span></label>
+            <label>Event Banner</label>
             <input type="file" accept="image/*" onChange={e => setEventForm(prev => ({ ...prev, banner: e.target.files[0] }))} />
           </div>
-          <button type="submit" style={{ marginTop: '.5rem', width: '100%', padding: '.75rem' }}>Create Event &rarr;</button>
-        </form>
-      )}
 
-      {createdEvent && !createdCat && (
-        <form className="form-card" onSubmit={handleCreateCategories}>
+          <hr className="divider" style={{ margin: '2rem 0' }} />
+
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-            <h2 style={{ margin: 0 }}>Step 2 — Add ticket tiers</h2>
+            <h2 style={{ margin: 0 }}>Ticket Tiers</h2>
             <button type="button" className="btn-outline" style={{ width: '32px', height: '32px', padding: 0, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', lineHeight: 1 }} onClick={() => setCatForms(prev => [...prev, { ...EMPTY_CAT }])} title="Add another tier">+</button>
           </div>
-          
+
           {catForms.map((form, index) => (
             <div key={index} style={{ marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: index < catForms.length - 1 ? '1px solid var(--border)' : 'none' }}>
               {catForms.length > 1 && <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}><h3 style={{ margin: 0, fontSize: '.9rem', color: 'var(--text-2)' }}>Tier #{index + 1}</h3><button type="button" className="btn-ghost" style={{ padding: '0.2rem 0.5rem', color: 'var(--red)', fontSize: '.8rem' }} onClick={() => setCatForms(prev => prev.filter((_, i) => i !== index))}>Remove</button></div>}
@@ -236,7 +223,8 @@ export default function SellerDashboard() {
               </div>
             </div>
           ))}
-          <button type="submit" disabled={creating} style={{ marginTop: '.5rem', width: '100%', padding: '.75rem' }}>{creating ? 'Deploying Tiers...' : 'Deploy Ticket Tiers \u2192'}</button>
+
+          <button type="submit" disabled={creating} style={{ marginTop: '.5rem', width: '100%', padding: '.75rem', background: 'var(--green)', color: 'white' }}>{creating ? 'Deploying to Blockchain...' : 'Create Event & Deploy Tiers \u2192'}</button>
         </form>
       )}
 
