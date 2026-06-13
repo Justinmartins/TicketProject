@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { createEvent, createCategory } from '../api'
+import { useState, useEffect } from 'react'
+import { createEvent, createCategory, getEvents, withdrawRevenue } from '../api'
 import { parseEther } from 'viem'
+import { usePublicClient } from 'wagmi'
 
 const EMPTY_EVENT = { name: '', description: '', venue: '', event_date: '', seller: '' }
 const EMPTY_CAT = { name: '', symbol: '', max_supply: '', price_eth: '', price_eur: '', ticket_uri: '' }
@@ -34,8 +35,52 @@ export default function SellerDashboard() {
   const [catForm, setCatForm] = useState(EMPTY_CAT)
   const [createdCat, setCreatedCat] = useState(null)
   const [error, setError] = useState(null)
+  const [withdrawing, setWithdrawing] = useState(false)
+
+  const publicClient = usePublicClient()
+  const [totalRevenue, setTotalRevenue] = useState(null)
+
+  useEffect(() => {
+    async function fetchRevenue() {
+      try {
+        const events = await getEvents()
+        let totalWei = 0n
+        for (const event of events) {
+          if (!event.ticket_categories) continue
+          for (const cat of event.ticket_categories) {
+            if (cat.contract_address) {
+              const bal = await publicClient.getBalance({ address: cat.contract_address })
+              totalWei += bal
+            }
+          }
+        }
+        setTotalRevenue((Number(totalWei) / 1e18).toFixed(4))
+      } catch (err) {
+        console.error("Failed to fetch revenue", err)
+      }
+    }
+
+    if (publicClient) fetchRevenue()
+  }, [publicClient, createdCat])
 
   const currentStep = !createdEvent ? 1 : !createdCat ? 2 : 3
+
+  async function handleWithdraw() {
+    if (!totalRevenue || totalRevenue === '0.0000') return
+    setWithdrawing(true)
+    setError(null)
+    try {
+      const result = await withdrawRevenue()
+      alert(`Success! Withdrawn from ${result.successful} out of ${result.attempted} contracts.`)
+      // Refresh revenue
+      setTotalRevenue('0.0000') // Since it's withdrawn, it'll drop to 0. 
+      // Ideally we re-fetch, but it takes time to mine. We'll set it manually.
+    } catch (err) {
+      setError("Withdraw failed: " + err.message)
+    } finally {
+      setWithdrawing(false)
+    }
+  }
 
   async function handleCreateEvent(e) {
     e.preventDefault(); setError(null)
@@ -43,14 +88,14 @@ export default function SellerDashboard() {
   }
   async function handleCreateCategory(e) {
     e.preventDefault(); setError(null)
-    try { 
+    try {
       const priceWei = parseEther(catForm.price_eth || '0').toString();
-      setCreatedCat(await createCategory(createdEvent.id, { 
-        ...catForm, 
-        max_supply: Number(catForm.max_supply), 
+      setCreatedCat(await createCategory(createdEvent.id, {
+        ...catForm,
+        max_supply: Number(catForm.max_supply),
         price_eur: Number(catForm.price_eur),
         price_wei: priceWei
-      })) 
+      }))
     }
     catch (err) { setError(err.message) }
   }
@@ -60,7 +105,32 @@ export default function SellerDashboard() {
       <div className="page-header">
         <p className="page-eyebrow">Seller portal</p>
         <h1>Seller Dashboard</h1>
-        <p className="page-subtitle">Create your event and deploy NFT tickets in 3 steps.</p>
+        <p className="page-subtitle">Create your event and deploy NFT tickets in 2 steps.</p>
+      </div>
+
+      <div className="form-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 1.75rem', background: 'var(--black)', color: 'white', borderColor: 'var(--black)' }}>
+        <div style={{ flex: 1 }}>
+          <h2 style={{ color: 'var(--text-3)', margin: 0, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Total Platform Revenue</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <p style={{ margin: 0, fontSize: '1.8rem', fontWeight: 800, lineHeight: 1.2 }}>
+              {totalRevenue !== null ? `${totalRevenue} ETH` : 'Loading...'}
+            </p>
+            {totalRevenue !== null && Number(totalRevenue) > 0 && (
+              <button 
+                onClick={handleWithdraw} 
+                disabled={withdrawing}
+                style={{ background: 'var(--green)', color: 'white', padding: '0.35rem 0.8rem', fontSize: '0.8rem', borderRadius: '999px', boxShadow: 'none', border: 'none' }}
+              >
+                {withdrawing ? 'Withdrawing...' : 'Withdraw to Wallet'}
+              </button>
+            )}
+          </div>
+        </div>
+        <div style={{ width: '48px', height: '48px', background: 'rgba(255,255,255,0.1)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '24px', height: '24px' }}>
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          </svg>
+        </div>
       </div>
 
       <StepIndicator current={currentStep} />
@@ -97,10 +167,10 @@ export default function SellerDashboard() {
             <input type="text" required placeholder="0x... or your brand name" value={eventForm.seller} onChange={e => setEventForm(prev => ({ ...prev, seller: e.target.value }))} />
           </div>
           <div className="field">
-            <label>Description <span className="muted" style={{textTransform:'none', fontWeight:500}}>(optional)</span></label>
+            <label>Description <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(optional)</span></label>
             <textarea placeholder="Tell your attendees what this event is about..." value={eventForm.description} onChange={e => setEventForm(prev => ({ ...prev, description: e.target.value }))} />
           </div>
-          <button type="submit" style={{marginTop:'.5rem', width:'100%', padding:'.75rem'}}>Create Event &rarr;</button>
+          <button type="submit" style={{ marginTop: '.5rem', width: '100%', padding: '.75rem' }}>Create Event &rarr;</button>
         </form>
       )}
 
@@ -137,15 +207,15 @@ export default function SellerDashboard() {
           </div>
           <div className="form-row">
             <div className="field">
-              <label>Price in ETH <span className="muted" style={{textTransform:'none', fontWeight:500}}>(Blockchain)</span></label>
+              <label>Price in ETH <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(Blockchain)</span></label>
               <input type="number" step="0.000001" required placeholder="e.g. 0.05" value={catForm.price_eth} onChange={e => setCatForm(prev => ({ ...prev, price_eth: e.target.value }))} />
             </div>
             <div className="field">
-              <label>Ticket URI <span className="muted" style={{textTransform:'none', fontWeight:500}}>(optional)</span></label>
+              <label>Ticket URI <span className="muted" style={{ textTransform: 'none', fontWeight: 500 }}>(optional)</span></label>
               <input type="text" placeholder="ipfs://..." value={catForm.ticket_uri} onChange={e => setCatForm(prev => ({ ...prev, ticket_uri: e.target.value }))} />
             </div>
           </div>
-          <button type="submit" style={{marginTop:'.5rem', width:'100%', padding:'.75rem'}}>Deploy Ticket Tier &rarr;</button>
+          <button type="submit" style={{ marginTop: '.5rem', width: '100%', padding: '.75rem' }}>Deploy Ticket Tier &rarr;</button>
         </form>
       )}
 

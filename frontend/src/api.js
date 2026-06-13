@@ -39,3 +39,8 @@ export const purchaseWithEur = (eventId, catId, data) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   }).then(json)
+
+export const withdrawRevenue = () =>
+  fetch(`${BASE}/events/withdraw`, {
+    method: 'POST',
+  }).then(json)

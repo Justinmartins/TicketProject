@@ -5,6 +5,7 @@ const artifact = require(path.join(__dirname, '../../out/Skeloton.sol/Ticket.jso
 const { abi: TICKET_ABI, bytecode: { object: TICKET_BYTECODE } } = artifact;
 
 const MINT_ABI = ['function mint(address to, uint256 quantity) external returns (uint256[])'];
+const WITHDRAW_ABI = ['function withdraw() external'];
 
 function getWallet() {
   const rpcUrl = process.env.RPC_URL || 'http://127.0.0.1:8545';
@@ -46,4 +47,16 @@ async function deployTicketContract({ name, symbol, maxSupply, ticketURI, priceW
   }
 }
 
-module.exports = { getTicketContract, deployTicketContract };
+async function withdrawFromContract(contractAddress) {
+  const wallet = getWallet();
+  const contract = new ethers.Contract(contractAddress, WITHDRAW_ABI, wallet);
+  const tx = await contract.withdraw();
+  await tx.wait();
+}
+
+async function getContractBalance(contractAddress) {
+  const provider = getWallet().provider;
+  return provider.getBalance(contractAddress);
+}
+
+module.exports = { getTicketContract, deployTicketContract, withdrawFromContract, getContractBalance };

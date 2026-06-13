@@ -1,5 +1,5 @@
 const db = require('../infrastructure/db');
-const { deployTicketContract } = require('../infrastructure/chain');
+const { deployTicketContract, withdrawFromContract, getContractBalance } = require('../infrastructure/chain');
 
 function createEvent(data) {
   const { name, venue, event_date, seller } = data;
@@ -52,4 +52,34 @@ function updateCategoryContract(categoryId, data) {
   return db.updateCategoryContract(categoryId, data);
 }
 
-module.exports = { createEvent, getEvent, listEvents, createTicketCategory, updateCategoryContract };
+async function withdrawRevenue() {
+  const events = listEvents();
+  const addresses = [];
+  for (const event of events) {
+    if (!event.ticket_categories) continue;
+    for (const cat of event.ticket_categories) {
+      if (cat.contract_address) {
+        addresses.push(cat.contract_address);
+      }
+    }
+  }
+
+  let withdrawnCount = 0;
+  let attemptedCount = 0;
+  for (const address of addresses) {
+    try {
+      const balance = await getContractBalance(address);
+      if (balance > 0n) {
+        attemptedCount++;
+        await withdrawFromContract(address);
+        withdrawnCount++;
+      }
+    } catch (err) {
+      console.error(`Withdraw failed for ${address}:`, err.message);
+      // continue with others
+    }
+  }
+  return { attempted: attemptedCount, successful: withdrawnCount };
+}
+
+module.exports = { createEvent, getEvent, listEvents, createTicketCategory, updateCategoryContract, withdrawRevenue };

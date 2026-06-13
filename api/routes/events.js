@@ -245,6 +245,23 @@ router.patch('/:id/categories/:catId/contract', (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.use('/:id/categories/:catId/purchase', purchaseRouter);
+/**
+ * @swagger
+ * /events/withdraw:
+ *   post:
+ *     summary: Withdraw all collected ETH from ticket contracts to the backend wallet
+ *     tags: [Seller]
+ *     responses:
+ *       200:
+ *         description: Withdrawal results
+ */
+router.post('/withdraw', async (req, res) => {
+  try {
+    const result = await service.withdrawRevenue();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
