@@ -2,7 +2,6 @@
 
 Our plateform is a Web3 ticketing platform where using NFTs on ERC-721 standard. Event organizers create events and ticket categories with a REST API, each category automatically deploys its own smart contract on Ethereum. Buyers can then purchase tickets either directly with ETH on-chain, or with a credit card (the platform mints for them).
 
-
 ## How it works
 
 When you create a ticket category : fresh `Ticket` smart contract is deployed on-chain holding the supply cap, the price, and the metadata URI pointing to IPFS. From there, two purchase paths exist:
@@ -14,28 +13,28 @@ Ticket metadata (images, descriptions) is stored on IPFS via Pinata.
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                       Frontend                          │
-│          React + Vite + wagmi/viem + react-router       │
-│                                                         │
-│   EventList → EventDetail → Basket → Checkout           │
-│                                  │           │          │
-│                               pay with    pay with      │
-│                                 ETH        card         │
-└──────────────────────┬──────────────────────┬───────────┘
-                       │ direct RPC call       │ HTTP POST /events/pay
-                       │                       │
-                       ▼                       ▼
-              ┌────────────────┐    ┌──────────────────────┐
-              │ Smart Contract │    │   Express REST API   │
-              │  (ERC-721 NFT) │◄───│  Node.js + ethers.js │
-              │ deployed per   │    │  + SQLite            │
-              │ ticket category│    └──────────────────────┘
-              └────────────────┘
-```
+Smart contracts: Forge project, unit-tested, with a compile script. One NFT contract deployed per ticket category.
+API: 3-layer architecture : presentation (routes), domain (business logic), infrastructure (clients, DB). Tested at every layer with mocks and dependency injection.
+Frontend: Two UIs : seller-facing (event/tier creation) and buyer-facing (browse, basket, checkout).
+Config: Env-based configuration with proper secrets handling.Swagger exposes all routes.
 
-The API is the single source of truth for event/category metadata (SQLite). The blockchain is the source of truth for ticket ownership. The two are linked by the `contract_address` stored in the `ticket_categories` table.
+## Full roadmap coverage
+Ticket category NFT contract : deployed via Forge, tested.
+Event + ticket category creation routes : POST /events creates the event; POST /events/:id/tiers creates a tier and deploys its dedicated NFT contract.
+Event retrieval route : GET /events/:id returns event info and all associated ticket categories.
+Buyer frontend : view event details and tiers, add tickets to a basket, confirm selection.
+On-chain checkout (Metamask) : direct wallet purchase, NFT minted to the buyer's address.
+Off-chain checkout (credit card) : fake card form posts, which mints the NFT to the wallet address provided in the body.
+Dynamic tier deployment : any new tier created through the API triggers a fresh NFT contract deployment, no manual step.
+
+## Key features delivered
+Event creation with one or more ticket tiers, with automatic EUR ↔ ETH price conversion
+Event banner upload and per-tier image, stored on IPFS via Pinata
+Dual checkout: Metamask wallet or credit card
+Purchased tickets displayed in the user's account
+Organizer ETH withdrawal directly to the wallet tied to their private key
+Full Swagger API documentation
+Clean seller and buyer UIs
 
 ---
 
