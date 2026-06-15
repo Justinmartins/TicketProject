@@ -6,20 +6,19 @@ Our plateform is a Web3 ticketing platform where using NFTs on ERC-721 standard.
 
 When you create a ticket category : fresh `Ticket` smart contract is deployed on-chain holding the supply cap, the price, and the metadata URI pointing to IPFS. From there, two purchase paths exist:
 
-- **Buy with ETH** : the user calls `buy(quantity)` directly on the contract from their wallet. No backend involved.
-- **Buy with card (EUR)** : the API accepts the payment (currently mocked, designed for Stripe), then calls `mint()` on the contract as the platform owner, sending the NFTs to the buyer's wallet address.
-
-Ticket metadata (images, descriptions) is stored on IPFS via Pinata.
+- **Buy with ETH** : the user calls the buying function directly on the contract from their wallet. No backend involved.
+- **Buy with card (EUR)** : the API accepts the payment (currently mocked, but could be designed for Stripe), then calls `mint()` on the contract as the platform owner, sending the NFTs to the buyer's wallet address.
+- Ticket metadata (images, descriptions) is **stored on IPFS with Pinata**.
 
 ## Architecture
 
-- Smart contracts: Forge project, fully unit-tested, with a compile script. One NFT contract deployed per ticket category.
-- API: 3-layer architecture : presentation (routes), domain (business logic), infrastructure (clients, DB). Tested at every layer with mocks and dependency injection. Swagger exposes all routes.
-- Frontend: Two UIs : seller-facing (event/tier creation) and buyer-facing (browse, basket, checkout).
-- Config: Env-based configuration with proper secrets handling.
+- **Smart contracts**: Forge project, fully unit-tested, with a compile script. One NFT contract deployed per ticket category.
+- **API**: 3-layer architecture : presentation (routes), domain (business logic), infrastructure (clients, DB). Tested at every layer with mocks and dependency injection. **Swagger** also exposes all routes on 'api/docs'.
+- **Frontend**: Two UIs : seller (event/tier creation) and buyer (browse, basket, checkout).
+- **Config**: Env-based configuration with proper secrets handling.
 
 ## Full roadmap coverage
-- Ticket category NFT contract : deployed via Forge, tested.
+- Ticket category NFT contract : deployed with Forge, tested.
 - Event + ticket category creation routes : POST /events creates the event; POST /events/:id/tiers creates a tier and deploys its dedicated NFT contract.
 - Event retrieval route : GET /events/:id returns event info and all associated ticket categories.
 - Buyer frontend : view event details and tiers, add tickets to a basket, confirm selection.
@@ -35,6 +34,7 @@ Ticket metadata (images, descriptions) is stored on IPFS via Pinata.
 - Organizer ETH withdrawal directly to the wallet tied to their private key
 - Full Swagger API documentation
 - Clean and intuitive seller and buyer UIs for easy use
+- Easy connexion with metamask wallet 
 
 ---
 
