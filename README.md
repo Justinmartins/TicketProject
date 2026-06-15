@@ -13,28 +13,28 @@ Ticket metadata (images, descriptions) is stored on IPFS via Pinata.
 
 ## Architecture
 
-Smart contracts: Forge project, unit-tested, with a compile script. One NFT contract deployed per ticket category.
-API: 3-layer architecture : presentation (routes), domain (business logic), infrastructure (clients, DB). Tested at every layer with mocks and dependency injection.
-Frontend: Two UIs : seller-facing (event/tier creation) and buyer-facing (browse, basket, checkout).
-Config: Env-based configuration with proper secrets handling.Swagger exposes all routes.
+- Smart contracts: Forge project, fully unit-tested, with a compile script. One NFT contract deployed per ticket category.
+- API: 3-layer architecture : presentation (routes), domain (business logic), infrastructure (clients, DB). Tested at every layer with mocks and dependency injection. Swagger exposes all routes.
+- Frontend: Two UIs : seller-facing (event/tier creation) and buyer-facing (browse, basket, checkout).
+- Config: Env-based configuration with proper secrets handling.
 
 ## Full roadmap coverage
-Ticket category NFT contract : deployed via Forge, tested.
-Event + ticket category creation routes : POST /events creates the event; POST /events/:id/tiers creates a tier and deploys its dedicated NFT contract.
-Event retrieval route : GET /events/:id returns event info and all associated ticket categories.
-Buyer frontend : view event details and tiers, add tickets to a basket, confirm selection.
-On-chain checkout (Metamask) : direct wallet purchase, NFT minted to the buyer's address.
-Off-chain checkout (credit card) : fake card form posts, which mints the NFT to the wallet address provided in the body.
-Dynamic tier deployment : any new tier created through the API triggers a fresh NFT contract deployment, no manual step.
+- Ticket category NFT contract : deployed via Forge, tested.
+- Event + ticket category creation routes : POST /events creates the event; POST /events/:id/tiers creates a tier and deploys its dedicated NFT contract.
+- Event retrieval route : GET /events/:id returns event info and all associated ticket categories.
+- Buyer frontend : view event details and tiers, add tickets to a basket, confirm selection.
+- On-chain checkout (Metamask) : direct wallet purchase, NFT minted to the buyer's address.
+- Off-chain checkout (credit card) : fake card form posts, which mints the NFT to the wallet address provided in the body.
+- Dynamic tier deployment : any new tier created through the API triggers a fresh NFT contract deployment, no manual step.
 
 ## Key features delivered
-Event creation with one or more ticket tiers, with automatic EUR ↔ ETH price conversion
-Event banner upload and per-tier image, stored on IPFS via Pinata
-Dual checkout: Metamask wallet or credit card
-Purchased tickets displayed in the user's account
-Organizer ETH withdrawal directly to the wallet tied to their private key
-Full Swagger API documentation
-Clean seller and buyer UIs
+- Event creation with one or more ticket tiers, with automatic EUR ↔ ETH price conversion
+- Event banner upload and per-tier image, stored on IPFS via Pinata
+- Dual checkout: Metamask wallet or credit card
+- Purchased tickets displayed in the user's account
+- Organizer ETH withdrawal directly to the wallet tied to their private key
+- Full Swagger API documentation
+- Clean and intuitive seller and buyer UIs for easy use
 
 ---
 
