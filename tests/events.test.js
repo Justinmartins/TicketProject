@@ -78,7 +78,7 @@ describe('GET /events/:id', () => {
   });
 });
 
-describe('POST /events/:id/categories', () => {
+describe('POST /events/:id/tiers', () => {
   let eventId;
 
   beforeEach(async () => {
@@ -102,7 +102,7 @@ describe('POST /events/:id/categories', () => {
 
   it('creates a category for an existing event', async () => {
     const res = await request(app)
-      .post(`/events/${eventId}/categories`)
+      .post(`/events/${eventId}/tiers`)
       .send(validCategory);
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
@@ -113,9 +113,9 @@ describe('POST /events/:id/categories', () => {
   });
 
   it('attaches multiple categories to the same event', async () => {
-    await request(app).post(`/events/${eventId}/categories`).send(validCategory);
+    await request(app).post(`/events/${eventId}/tiers`).send(validCategory);
     await request(app)
-      .post(`/events/${eventId}/categories`)
+      .post(`/events/${eventId}/tiers`)
       .send({ ...validCategory, name: 'Standard', symbol: 'STD', price_eur: 60 });
 
     const res = await request(app).get(`/events/${eventId}`);
@@ -124,7 +124,7 @@ describe('POST /events/:id/categories', () => {
 
   it('returns 400 when the event does not exist', async () => {
     const res = await request(app)
-      .post('/events/9999/categories')
+      .post('/events/9999/tiers')
       .send(validCategory);
     expect(res.status).toBe(400);
     expect(res.body.error).toBe('Event not found');
@@ -132,7 +132,7 @@ describe('POST /events/:id/categories', () => {
 
   it('returns 400 when required category fields are missing', async () => {
     const res = await request(app)
-      .post(`/events/${eventId}/categories`)
+      .post(`/events/${eventId}/tiers`)
       .send({ name: 'Bad' });
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/required/i);

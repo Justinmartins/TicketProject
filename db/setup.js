@@ -19,6 +19,7 @@ db.exec(`
     venue       TEXT    NOT NULL,
     event_date  TEXT    NOT NULL,
     seller      TEXT    NOT NULL,
+    banner_url  TEXT,
     created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
   );
 

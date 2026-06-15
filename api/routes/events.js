@@ -114,10 +114,10 @@ router.get('/:id', (req, res) => {
 
 /**
  * @swagger
- * /events/{id}/categories:
+ * /events/{id}/tiers:
  *   post:
  *     summary: Create a ticket category and auto-deploy its NFT contract
- *     tags: [Categories]
+ *     tags: [Tiers]
  *     parameters:
  *       - in: path
  *         name: id
@@ -152,7 +152,7 @@ router.get('/:id', (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/:id/categories', upload.single('image'), async (req, res) => {
+router.post('/:id/tiers', upload.single('image'), async (req, res) => {
   try {
     const data = { ...req.body };
     
@@ -177,10 +177,10 @@ router.post('/:id/categories', upload.single('image'), async (req, res) => {
 
 /**
  * @swagger
- * /events/{id}/categories/{catId}/contract:
+ * /events/{id}/tiers/{catId}/contract:
  *   patch:
  *     summary: Manually link a deployed contract address to a category
- *     tags: [Categories]
+ *     tags: [Tiers]
  *     parameters:
  *       - in: path
  *         name: id
@@ -217,7 +217,7 @@ router.post('/:id/categories', upload.single('image'), async (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.patch('/:id/categories/:catId/contract', (req, res) => {
+router.patch('/:id/tiers/:catId/contract', (req, res) => {
   try {
     const category = service.updateCategoryContract(Number(req.params.catId), req.body);
     res.json(category);
@@ -228,7 +228,7 @@ router.patch('/:id/categories/:catId/contract', (req, res) => {
 
 /**
  * @swagger
- * /events/{id}/categories/{catId}/purchase:
+ * /events/{id}/tiers/{catId}/purchase:
  *   post:
  *     summary: Purchase tickets via API (mints NFT to buyer address)
  *     tags: [Checkout]
@@ -267,6 +267,7 @@ router.patch('/:id/categories/:catId/contract', (req, res) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
+router.use('/:id/tiers/:catId/purchase', purchaseRouter);
 /**
  * @swagger
  * /events/withdraw:
