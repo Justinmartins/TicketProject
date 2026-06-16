@@ -103,16 +103,6 @@ The app runs at `http://localhost:5173` by default.
 
 ## API overview
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/events` | List all events |
-| `POST` | `/events` | Create an event |
-| `GET` | `/events/:id` | Get event with its ticket categories |
-| `POST` | `/events/:id/categories` | Create a ticket category + deploy contract |
-| `PATCH` | `/events/:id/categories/:catId/contract` | Update contract address manually |
-| `POST` | `/events/:id/categories/:catId/purchase` | Buy tickets (EUR path) |
-| `POST` | `/events/pay` | Alternative payment endpoint with card validation |
-
 Full interactive docs at `/api-docs` once the server is running.
 
 ---
